@@ -27,6 +27,13 @@ class TestDCAnalyzer(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Resistance cannot be zero"):
             analyze_dc(12, [6, 0], "parallel")
 
+    def test_negative_resistance_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "greater than zero"):
+            analyze_dc(12, -6)
+
+        with self.assertRaisesRegex(ValueError, "greater than zero"):
+            analyze_dc(12, [6, -3], "parallel")
+
 
 if __name__ == "__main__":
     unittest.main()

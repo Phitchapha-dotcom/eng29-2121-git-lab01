@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="region region-{{ analysis.primary.region }}">
+  <strong>{{ region_labels[analysis.primary.region] }}</strong>
+</section>
+
+{% for warning in analysis.primary.warnings %}
+<p class="warning">{{ warning }}</p>
+{% endfor %}
+
+<table>
+  <thead>
+    <tr><th>ค่า</th><th>ผลลัพธ์</th><th>หน่วย</th></tr>
+  </thead>
+  <tbody>
+    {% for label, value, unit in rows %}
+    <tr><td>{{ label }}</td><td>{{ value }}</td><td>{{ unit }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p><a href="{{ url_for('index') }}">คำนวณใหม่</a></p>
+{% endblock %}

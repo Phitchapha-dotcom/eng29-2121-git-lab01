@@ -19,5 +19,27 @@
   </tbody>
 </table>
 
+<h2>ตรวจทานด้วยวิธีอิสระ (Independent check)</h2>
+<p class="badge {% if analysis.agrees %}badge-pass{% else %}badge-fail{% endif %}">
+  {% if analysis.agrees %}ผ่าน{% else %}ไม่ผ่าน{% endif %}
+  (ผลต่างสูงสุด {{ "%.2e"|format(analysis.max_delta) }})
+</p>
+<table>
+  <thead>
+    <tr><th>ค่า</th><th>Analytic</th><th>Independent</th><th>ผลต่าง</th><th>หน่วย</th></tr>
+  </thead>
+  <tbody>
+    {% for row in comparison %}
+    <tr>
+      <td>{{ row.label }}</td>
+      <td>{{ row.primary }}</td>
+      <td>{{ row.independent }}</td>
+      <td>{{ row.delta }}</td>
+      <td>{{ row.unit }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
 <p><a href="{{ url_for('index') }}">คำนวณใหม่</a></p>
 {% endblock %}

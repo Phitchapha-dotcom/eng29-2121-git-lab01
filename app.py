@@ -41,6 +41,32 @@ def format_result(result) -> list[tuple[str, str, str]]:
     ]
 
 
+def comparison_rows(analysis) -> list[dict[str, str]]:
+    quantities = (
+        ("VB", "vb", "V", 1.0, 4),
+        ("VE", "ve", "V", 1.0, 4),
+        ("VC", "vc", "V", 1.0, 4),
+        ("VCE", "vce", "V", 1.0, 4),
+        ("IB", "ib", "µA", 1e6, 3),
+        ("IC", "ic", "mA", 1e3, 4),
+        ("IE", "ie", "mA", 1e3, 4),
+    )
+    rows = []
+    for label, attribute, unit, scale, digits in quantities:
+        primary = getattr(analysis.primary, attribute) * scale
+        independent = getattr(analysis.independent, attribute) * scale
+        rows.append(
+            {
+                "label": label,
+                "unit": unit,
+                "primary": f"{primary:.{digits}f}",
+                "independent": f"{independent:.{digits}f}",
+                "delta": f"{abs(primary - independent):.2e}",
+            }
+        )
+    return rows
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
 
@@ -74,6 +100,7 @@ def create_app() -> Flask:
             inputs=inputs,
             analysis=analysis,
             rows=format_result(analysis.primary),
+            comparison=comparison_rows(analysis),
             region_labels=REGION_LABELS,
         )
 

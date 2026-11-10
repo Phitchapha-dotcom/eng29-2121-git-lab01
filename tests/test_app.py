@@ -57,3 +57,22 @@ def test_non_numeric_value_returns_400(client):
     assert response.status_code == 400
     body = response.get_data(as_text=True)
     assert "ต้องเป็นตัวเลข" in body
+
+
+def test_result_page_shows_independent_comparison(client):
+    response = client.post("/calculate", data=VALID_FORM)
+    body = response.get_data(as_text=True)
+    assert "Independent" in body
+    assert "ผ่าน" in body
+    assert "µA" in body
+
+
+def test_saturation_warning_is_shown(client):
+    response = client.post(
+        "/calculate",
+        data=dict(VALID_FORM, rc="10000", re="100", beta="300"),
+    )
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Saturation" in body
+    assert "คำเตือน" in body

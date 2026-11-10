@@ -158,3 +158,74 @@ def solve_analytic(inputs: BiasInputs) -> BiasResult:
     return _make_result(
         inputs, vb=vb, ve=ve, vc=vc, vce=vc - ve, ib=ib, ic=ic, ie=ie
     )
+
+
+@dataclass(frozen=True)
+class Analysis:
+    primary: BiasResult
+    independent: BiasResult
+    max_delta: float
+    agrees: bool
+
+
+def _solve_3x3(matrix: list[list[float]], rhs: list[float]) -> list[float]:
+    a = [row[:] + [value] for row, value in zip(matrix, rhs)]
+    for column in range(3):
+        pivot = max(range(column, 3), key=lambda row: abs(a[row][column]))
+        if a[pivot][column] == 0:
+            raise ValueError("Singular circuit matrix.")
+        a[column], a[pivot] = a[pivot], a[column]
+        for row in range(column + 1, 3):
+            factor = a[row][column] / a[column][column]
+            for index in range(column, 4):
+                a[row][index] -= factor * a[column][index]
+    solution = [0.0, 0.0, 0.0]
+    for row in range(2, -1, -1):
+        total = a[row][3] - sum(
+            a[row][column] * solution[column] for column in range(row + 1, 3)
+        )
+        solution[row] = total / a[row][row]
+    return solution
+
+
+def solve_numeric(inputs: BiasInputs) -> BiasResult:
+    beta_plus_one_re = (inputs.beta + 1) * inputs.re
+    matrix = [
+        [1 / inputs.r1 + 1 / inputs.r2, 1 / beta_plus_one_re, 0.0],
+        [1.0, -1.0, 0.0],
+        [0.0, inputs.beta / beta_plus_one_re, 1 / inputs.rc],
+    ]
+    rhs = [inputs.vcc / inputs.r1, inputs.vbe, inputs.vcc / inputs.rc]
+    vb, ve, vc = _solve_3x3(matrix, rhs)
+    ib = ve / beta_plus_one_re
+    ic = inputs.beta * ib
+    ie = (inputs.beta + 1) * ib
+    return _make_result(
+        inputs, vb=vb, ve=ve, vc=vc, vce=vc - ve, ib=ib, ic=ic, ie=ie
+    )
+
+
+def analyze(inputs: BiasInputs) -> Analysis:
+    validate_inputs(inputs)
+    primary = solve_analytic(inputs)
+    independent = solve_numeric(inputs)
+    quantities = ("vb", "ve", "vc", "vce", "ib", "ic", "ie")
+    deltas = [
+        abs(getattr(primary, name) - getattr(independent, name))
+        for name in quantities
+    ]
+    agrees = all(
+        math.isclose(
+            getattr(primary, name),
+            getattr(independent, name),
+            rel_tol=1e-9,
+            abs_tol=1e-9,
+        )
+        for name in quantities
+    )
+    return Analysis(
+        primary=primary,
+        independent=independent,
+        max_delta=max(deltas),
+        agrees=agrees,
+    )

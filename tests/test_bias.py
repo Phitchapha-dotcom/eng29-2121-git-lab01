@@ -1,6 +1,15 @@
 import pytest
 
-from bjt import BiasInputs, ValidationError, parse_inputs, solve_analytic, validate_inputs
+from bjt import (
+    Analysis,
+    BiasInputs,
+    ValidationError,
+    analyze,
+    parse_inputs,
+    solve_analytic,
+    solve_numeric,
+    validate_inputs,
+)
 
 VALID_FORM = {
     "vcc": "12",
@@ -115,3 +124,31 @@ def test_high_vbe_relative_to_vcc_is_cutoff():
     result = solve_analytic(inputs)
     assert result.region == "cutoff"
     assert result.ib == 0.0
+
+
+SATURATION = BiasInputs(vcc=12, r1=47000, r2=10000, rc=10000, re=100, beta=300, vbe=0.7)
+CUTOFF = BiasInputs(vcc=12, r1=100000, r2=1000, rc=2200, re=1000, beta=100, vbe=0.7)
+
+
+def test_numeric_solver_matches_known_active_values():
+    result = solve_numeric(ACTIVE)
+    assert result.region == "active"
+    assert result.vce == pytest.approx(7.755414785, rel=1e-9)
+    assert result.ic == pytest.approx(0.001323675223, rel=1e-9)
+
+
+@pytest.mark.parametrize("inputs", [ACTIVE, SATURATION, CUTOFF])
+def test_methods_agree(inputs):
+    analysis = analyze(inputs)
+    assert isinstance(analysis, Analysis)
+    assert analysis.agrees is True
+    assert analysis.max_delta < 1e-9
+    assert analysis.primary.region == analysis.independent.region
+
+
+def test_large_beta_agrees():
+    analysis = analyze(
+        BiasInputs(vcc=12, r1=47000, r2=10000, rc=2200, re=1000, beta=10000, vbe=0.7)
+    )
+    assert analysis.agrees is True
+    assert analysis.primary.region == "active"

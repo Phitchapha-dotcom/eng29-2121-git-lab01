@@ -67,3 +67,94 @@ def validate_inputs(inputs: BiasInputs) -> None:
         raise ValidationError("vbe", "VBE ต้องมากกว่า 0")
     if inputs.vbe >= inputs.vcc:
         raise ValidationError("vbe", "VBE ต้องน้อยกว่า VCC")
+
+
+@dataclass(frozen=True)
+class BiasResult:
+    vb: float
+    ve: float
+    vc: float
+    vce: float
+    ib: float
+    ic: float
+    ie: float
+    region: str
+    warnings: tuple[str, ...]
+
+
+CUTOFF_WARNING = (
+    "คำเตือน: ทรานซิสเตอร์อยู่ในช่วงตัดการทำงาน (cutoff) — "
+    "VBB ไม่มากพอที่จะไบอัสเบส-อีมิเตอร์"
+)
+SATURATION_WARNING = (
+    "คำเตือน: วงจรอยู่ในช่วงอิ่มตัว (saturation) — VCE ต่ำกว่า 0.2 V "
+    "สมการช่วง active ไม่แม่นยำ"
+)
+
+
+def _base_divider(inputs: BiasInputs) -> tuple[float, float]:
+    vbb = inputs.vcc * inputs.r2 / (inputs.r1 + inputs.r2)
+    rb = inputs.r1 * inputs.r2 / (inputs.r1 + inputs.r2)
+    return vbb, rb
+
+
+def _make_result(
+    inputs: BiasInputs,
+    *,
+    vb: float,
+    ve: float,
+    vc: float,
+    vce: float,
+    ib: float,
+    ic: float,
+    ie: float,
+) -> BiasResult:
+    vbb, _ = _base_divider(inputs)
+    if vbb <= inputs.vbe:
+        return BiasResult(
+            vb=vbb,
+            ve=0.0,
+            vc=inputs.vcc,
+            vce=inputs.vcc,
+            ib=0.0,
+            ic=0.0,
+            ie=0.0,
+            region="cutoff",
+            warnings=(CUTOFF_WARNING,),
+        )
+    if vce < VCE_SAT_V:
+        return BiasResult(
+            vb=vb,
+            ve=ve,
+            vc=vc,
+            vce=vce,
+            ib=ib,
+            ic=ic,
+            ie=ie,
+            region="saturation",
+            warnings=(SATURATION_WARNING,),
+        )
+    return BiasResult(
+        vb=vb,
+        ve=ve,
+        vc=vc,
+        vce=vce,
+        ib=ib,
+        ic=ic,
+        ie=ie,
+        region="active",
+        warnings=(),
+    )
+
+
+def solve_analytic(inputs: BiasInputs) -> BiasResult:
+    vbb, rb = _base_divider(inputs)
+    ib = (vbb - inputs.vbe) / (rb + (inputs.beta + 1) * inputs.re)
+    ic = inputs.beta * ib
+    ie = (inputs.beta + 1) * ib
+    ve = ie * inputs.re
+    vb = ve + inputs.vbe
+    vc = inputs.vcc - ic * inputs.rc
+    return _make_result(
+        inputs, vb=vb, ve=ve, vc=vc, vce=vc - ve, ib=ib, ic=ic, ie=ie
+    )

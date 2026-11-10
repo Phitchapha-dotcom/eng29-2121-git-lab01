@@ -70,9 +70,22 @@ def test_empty_field_returns_400(client):
 def test_result_page_shows_input_summary(client):
     response = client.post("/calculate", data=VALID_FORM)
     body = response.get_data(as_text=True)
-    assert "ค่าที่กรอก" in body
-    assert "47000" in body
-    assert "150" in body
+    assert "พารามิเตอร์นำเข้า" in body
+    assert 'value="47000"' in body
+    assert 'value="150"' in body
+
+
+def test_dashboard_has_circuit_panel(client):
+    body = client.get("/").get_data(as_text=True)
+    assert "วงจร" in body
+    assert "Q1" in body
+    assert "R1" in body
+
+
+def test_dashboard_shows_default_results_on_load(client):
+    body = client.get("/").get_data(as_text=True)
+    assert "7.7554" in body
+    assert "Active" in body
 
 
 def test_large_beta_formats(client):

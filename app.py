@@ -29,6 +29,26 @@ DEFAULT_VALUES = {
 }
 
 
+def _format_quantity(raw, unit: str = "", scale: float = 1.0) -> str:
+    try:
+        number = float(raw)
+    except (TypeError, ValueError):
+        return "—"
+    text = f"{number / scale:g}"
+    return f"{text} {unit}" if unit else text
+
+
+def circuit_values(values) -> dict[str, str]:
+    return {
+        "vcc": _format_quantity(values.get("vcc"), "V"),
+        "r1": _format_quantity(values.get("r1"), "kΩ", 1000),
+        "r2": _format_quantity(values.get("r2"), "kΩ", 1000),
+        "rc": _format_quantity(values.get("rc"), "kΩ", 1000),
+        "re": _format_quantity(values.get("re"), "kΩ", 1000),
+        "beta": _format_quantity(values.get("beta")),
+    }
+
+
 def format_result(result) -> list[tuple[str, str, str]]:
     return [
         ("VB", f"{result.vb:.4f}", "V"),
@@ -38,24 +58,6 @@ def format_result(result) -> list[tuple[str, str, str]]:
         ("IB", f"{result.ib * 1e6:.3f}", "µA"),
         ("IC", f"{result.ic * 1e3:.4f}", "mA"),
         ("IE", f"{result.ie * 1e3:.4f}", "mA"),
-    ]
-
-
-INPUT_ROWS = (
-    ("vcc", "VCC", "V"),
-    ("r1", "R1", "Ω"),
-    ("r2", "R2", "Ω"),
-    ("rc", "RC", "Ω"),
-    ("re", "RE", "Ω"),
-    ("beta", "beta", ""),
-    ("vbe", "VBE", "V"),
-)
-
-
-def format_inputs(inputs) -> list[tuple[str, str, str]]:
-    return [
-        (label, f"{getattr(inputs, field):g}", unit)
-        for field, label, unit in INPUT_ROWS
     ]
 
 
@@ -88,14 +90,23 @@ def comparison_rows(analysis) -> list[dict[str, str]]:
 def create_app() -> Flask:
     app = Flask(__name__)
 
-    @app.get("/")
-    def index():
+    def render_dashboard(values, errors=None, analysis=None):
         return render_template(
             "index.html",
             fields=FORM_FIELDS,
-            values=DEFAULT_VALUES,
-            errors={},
+            values=values,
+            errors=errors or {},
+            analysis=analysis,
+            rows=format_result(analysis.primary) if analysis else [],
+            comparison=comparison_rows(analysis) if analysis else [],
+            circuit=circuit_values(values),
+            region_labels=REGION_LABELS,
         )
+
+    @app.get("/")
+    def index():
+        analysis = analyze(parse_inputs(DEFAULT_VALUES))
+        return render_dashboard(DEFAULT_VALUES, analysis=analysis)
 
     @app.post("/calculate")
     def calculate():
@@ -104,24 +115,9 @@ def create_app() -> Flask:
             analysis = analyze(inputs)
         except ValidationError as exc:
             values = {field: request.form.get(field, "") for field in FIELD_LABELS}
-            return (
-                render_template(
-                    "index.html",
-                    fields=FORM_FIELDS,
-                    values=values,
-                    errors={exc.field: exc.message},
-                ),
-                400,
-            )
-        return render_template(
-            "result.html",
-            inputs=inputs,
-            analysis=analysis,
-            rows=format_result(analysis.primary),
-            input_rows=format_inputs(inputs),
-            comparison=comparison_rows(analysis),
-            region_labels=REGION_LABELS,
-        )
+            return render_dashboard(values, errors={exc.field: exc.message}), 400
+        values = {field: request.form.get(field, "") for field in FIELD_LABELS}
+        return render_dashboard(values, analysis=analysis)
 
     return app
 

@@ -1,13 +1,196 @@
 {% extends "base.html" %}
 {% block content %}
-<form method="post" action="{{ url_for('calculate') }}">
-  {% for name, label, unit in fields %}
-  <div class="field">
-    <label for="{{ name }}">{{ label }}{% if unit %} ({{ unit }}){% endif %}</label>
-    <input id="{{ name }}" name="{{ name }}" type="text" inputmode="decimal" value="{{ values[name] }}">
-    {% if errors.get(name) %}<p class="error">{{ errors[name] }}</p>{% endif %}
-  </div>
-  {% endfor %}
-  <button type="submit">คำนวณ</button>
-</form>
+<main class="dashboard">
+
+  <section class="card card-input" aria-labelledby="input-heading">
+    <div class="card-head">
+      <h2 id="input-heading">พารามิเตอร์นำเข้า</h2>
+      <p class="card-sub">กรอกค่าองค์ประกอบของวงจร</p>
+    </div>
+    <form method="post" action="{{ url_for('calculate') }}" novalidate>
+      {% for name, label, unit in fields %}
+      <div class="field{% if errors.get(name) %} field-invalid{% endif %}">
+        <label for="{{ name }}">{{ label }}</label>
+        <div class="input-wrap">
+          <input id="{{ name }}" name="{{ name }}" type="text" inputmode="decimal"
+                 value="{{ values[name] }}"
+                 {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+          {% if unit %}<span class="unit">{{ unit }}</span>{% endif %}
+        </div>
+        {% if errors.get(name) %}
+        <p class="error" id="{{ name }}-error" role="alert">{{ errors[name] }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn-primary">คำนวณ DC Bias</button>
+    </form>
+  </section>
+
+  <section class="card card-circuit" aria-labelledby="circuit-heading">
+    <div class="card-head">
+      <h2 id="circuit-heading">วงจร</h2>
+      <p class="card-sub">Voltage-divider bias · NPN</p>
+    </div>
+    <div class="schematic-wrap">
+      <svg class="schematic" viewBox="0 0 320 334" role="img"
+           aria-label="วงจรขยาย BJT แบบ common emitter พร้อมไบอัสด้วยตัวต้านทานแบ่งแรงดัน">
+        <!-- VCC rail -->
+        <line x1="110" y1="34" x2="225" y2="34"></line>
+        <line x1="167" y1="34" x2="167" y2="24"></line>
+        <text x="167" y="16" class="sch-value" text-anchor="middle">VCC = {{ circuit.vcc }}</text>
+
+        <!-- R1 -->
+        <line x1="110" y1="34" x2="110" y2="48"></line>
+        <rect x="100" y="48" width="20" height="50" rx="3"></rect>
+        <line x1="110" y1="98" x2="110" y2="142"></line>
+
+        <!-- R2 -->
+        <rect x="100" y="142" width="20" height="50" rx="3"></rect>
+        <line x1="110" y1="192" x2="110" y2="216"></line>
+        <line x1="97" y1="216" x2="123" y2="216"></line>
+        <line x1="102" y1="222" x2="118" y2="222"></line>
+        <line x1="106" y1="228" x2="114" y2="228"></line>
+
+        <!-- base branch -->
+        <circle cx="110" cy="120" r="3" class="sch-dot"></circle>
+        <line x1="110" y1="120" x2="150" y2="120"></line>
+        <line x1="150" y1="120" x2="150" y2="170"></line>
+        <line x1="150" y1="170" x2="190" y2="170"></line>
+
+        <!-- transistor Q1 -->
+        <line x1="190" y1="150" x2="190" y2="190" class="sch-thick"></line>
+        <line x1="190" y1="158" x2="225" y2="140"></line>
+        <line x1="190" y1="182" x2="225" y2="200"></line>
+        <polygon points="225,200 211,197 216,188" class="sch-fill"></polygon>
+
+        <!-- RC -->
+        <line x1="225" y1="34" x2="225" y2="48"></line>
+        <rect x="215" y="48" width="20" height="50" rx="3"></rect>
+        <line x1="225" y1="98" x2="225" y2="140"></line>
+        <circle cx="225" cy="118" r="3" class="sch-dot"></circle>
+
+        <!-- RE -->
+        <line x1="225" y1="200" x2="225" y2="246"></line>
+        <rect x="215" y="246" width="20" height="50" rx="3"></rect>
+        <line x1="225" y1="296" x2="225" y2="318"></line>
+        <line x1="212" y1="318" x2="238" y2="318"></line>
+        <line x1="217" y1="324" x2="233" y2="324"></line>
+        <line x1="221" y1="330" x2="229" y2="330"></line>
+
+        <!-- labels -->
+        <text x="90" y="70" text-anchor="end">R1</text>
+        <text x="90" y="85" class="sch-sub" text-anchor="end">{{ circuit.r1 }}</text>
+        <text x="90" y="164" text-anchor="end">R2</text>
+        <text x="90" y="179" class="sch-sub" text-anchor="end">{{ circuit.r2 }}</text>
+        <text x="245" y="70">RC</text>
+        <text x="245" y="85" class="sch-sub">{{ circuit.rc }}</text>
+        <text x="245" y="268">RE</text>
+        <text x="245" y="283" class="sch-sub">{{ circuit.re }}</text>
+        <text x="168" y="214" text-anchor="middle">Q1</text>
+        <text x="168" y="229" class="sch-sub" text-anchor="middle">β = {{ circuit.beta }}</text>
+      </svg>
+    </div>
+    <p class="circuit-note">ค่าตัวต้านทานในไดอะแกรมแสดงหน่วยเป็น kΩ</p>
+  </section>
+
+  <section class="card card-results" aria-labelledby="results-heading">
+    <div class="card-head">
+      <h2 id="results-heading">จุดทำงาน DC</h2>
+      <p class="card-sub">Operating point</p>
+    </div>
+
+    {% if analysis %}
+    <div class="status status-{{ analysis.primary.region }}">
+      <span class="status-icon" aria-hidden="true">
+        {% if analysis.primary.region == "active" %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+        {% elif analysis.primary.region == "saturation" %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 9v5"></path><path d="M12 18h.01"></path></svg>
+        {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m15 9-6 6M9 9l6 6"></path></svg>
+        {% endif %}
+      </span>
+      <div>
+        <p class="status-label">สถานะการทำงาน</p>
+        <p class="status-value">{{ region_labels[analysis.primary.region] }}</p>
+      </div>
+    </div>
+
+    {% for warning in analysis.primary.warnings %}
+    <p class="warning" role="alert">{{ warning }}</p>
+    {% endfor %}
+
+    {% if analysis.primary.region == "saturation" %}
+    <p class="note">ค่าด้านล่างเป็นค่าประมาณจากสมการช่วง active (ไม่ใช่จุดทำงานจริง) — VCE จริงใกล้ 0.2 V</p>
+    {% endif %}
+
+    <table class="data-table">
+      <thead>
+        <tr><th scope="col">ค่า</th><th scope="col">ผลลัพธ์</th><th scope="col">หน่วย</th></tr>
+      </thead>
+      <tbody>
+        {% for label, value, unit in rows %}
+        <tr><td>{{ label }}</td><td>{{ value }}</td><td>{{ unit }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="criteria">
+      <p class="criteria-title">เกณฑ์การจำแนกช่วงการทำงาน</p>
+      <ul>
+        <li><span class="dot dot-active"></span>Active — VCE ≥ 0.2 V</li>
+        <li><span class="dot dot-saturation"></span>Saturation — VCE &lt; 0.2 V</li>
+        <li><span class="dot dot-cutoff"></span>Cutoff — VBB ≤ VBE</li>
+      </ul>
+    </div>
+    {% else %}
+    <p class="empty-state">แก้ไขค่าที่ไม่ถูกต้องแล้วกด “คำนวณ DC Bias” อีกครั้ง</p>
+    {% endif %}
+  </section>
+
+  <section class="card card-compare" aria-labelledby="compare-heading">
+    <div class="card-head">
+      <div>
+        <h2 id="compare-heading">ตรวจทานด้วยวิธีอิสระ (Independent check)</h2>
+        <p class="card-sub">เทียบค่า Thevenin analytic กับ nodal solve</p>
+      </div>
+      {% if analysis %}
+      <p class="check-badge {% if analysis.agrees %}check-pass{% else %}check-fail{% endif %}">
+        {% if analysis.agrees %}ผ่าน{% else %}ไม่ผ่าน{% endif %}
+        <span class="check-delta">ผลต่างสูงสุด {{ "%.2e"|format(analysis.max_delta) }}</span>
+      </p>
+      {% endif %}
+    </div>
+
+    {% if analysis %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">ค่า</th>
+            <th scope="col" class="num">Analytic</th>
+            <th scope="col" class="num">Independent</th>
+            <th scope="col" class="num">ผลต่าง</th>
+            <th scope="col">หน่วย</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in comparison %}
+          <tr>
+            <td>{{ row.label }}</td>
+            <td class="num">{{ row.primary }}</td>
+            <td class="num">{{ row.independent }}</td>
+            <td class="num">{{ row.delta }}</td>
+            <td>{{ row.unit }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">ยังไม่มีผลให้ตรวจทาน</p>
+    {% endif %}
+  </section>
+
+</main>
 {% endblock %}

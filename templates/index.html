@@ -4,7 +4,7 @@
   {% for name, label, unit in fields %}
   <div class="field">
     <label for="{{ name }}">{{ label }}{% if unit %} ({{ unit }}){% endif %}</label>
-    <input id="{{ name }}" name="{{ name }}" type="number" step="any" value="{{ values[name] }}">
+    <input id="{{ name }}" name="{{ name }}" type="text" inputmode="decimal" value="{{ values[name] }}">
     {% if errors.get(name) %}<p class="error">{{ errors[name] }}</p>{% endif %}
   </div>
   {% endfor %}

@@ -98,6 +98,7 @@ def test_saturation_is_detected():
     assert result.region == "saturation"
     assert result.vce < 0.2
     assert any("saturation" in warning for warning in result.warnings)
+    assert any("0.2" in warning for warning in result.warnings)
 
 
 def test_cutoff_is_detected():
@@ -152,3 +153,18 @@ def test_large_beta_agrees():
     )
     assert analysis.agrees is True
     assert analysis.primary.region == "active"
+
+
+def test_whitespace_padded_number_is_accepted():
+    raw = dict(VALID_FORM)
+    raw["vcc"] = " 12 "
+    assert parse_inputs(raw).vcc == 12.0
+
+
+def test_high_vbe_cutoff_agrees_between_methods():
+    analysis = analyze(
+        BiasInputs(vcc=12, r1=47000, r2=10000, rc=2200, re=1000, beta=150, vbe=11.9)
+    )
+    assert analysis.primary.region == "cutoff"
+    assert analysis.independent.region == "cutoff"
+    assert analysis.agrees is True

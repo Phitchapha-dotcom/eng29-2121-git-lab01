@@ -57,6 +57,39 @@ def test_non_numeric_value_returns_400(client):
     assert response.status_code == 400
     body = response.get_data(as_text=True)
     assert "ต้องเป็นตัวเลข" in body
+    assert 'value="47,000"' in body
+
+
+def test_empty_field_returns_400(client):
+    response = client.post("/calculate", data=dict(VALID_FORM, r1=""))
+    assert response.status_code == 400
+    body = response.get_data(as_text=True)
+    assert "กรุณากรอก R1" in body
+
+
+def test_result_page_shows_input_summary(client):
+    response = client.post("/calculate", data=VALID_FORM)
+    body = response.get_data(as_text=True)
+    assert "ค่าที่กรอก" in body
+    assert "47000" in body
+    assert "150" in body
+
+
+def test_large_beta_formats(client):
+    response = client.post("/calculate", data=dict(VALID_FORM, beta="10000"))
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "7.5072" in body
+
+
+def test_saturation_page_labels_active_region_estimate(client):
+    response = client.post(
+        "/calculate",
+        data=dict(VALID_FORM, rc="10000", re="100", beta="300"),
+    )
+    body = response.get_data(as_text=True)
+    assert "ประมาณ" in body
+    assert "0.2" in body
 
 
 def test_result_page_shows_independent_comparison(client):

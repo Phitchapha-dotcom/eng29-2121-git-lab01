@@ -8,6 +8,22 @@
 <p class="warning">{{ warning }}</p>
 {% endfor %}
 
+<h2>ค่าที่กรอก</h2>
+<table>
+  <thead>
+    <tr><th>ค่า</th><th>ค่าที่กรอก</th><th>หน่วย</th></tr>
+  </thead>
+  <tbody>
+    {% for label, value, unit in input_rows %}
+    <tr><td>{{ label }}</td><td>{{ value }}</td><td>{{ unit }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>จุดทำงาน DC</h2>
+{% if analysis.primary.region == "saturation" %}
+<p class="note">ค่าด้านล่างเป็นค่าประมาณจากสมการช่วง active (ไม่ใช่จุดทำงานจริง) — VCE จริงใกล้ 0.2 V</p>
+{% endif %}
 <table>
   <thead>
     <tr><th>ค่า</th><th>ผลลัพธ์</th><th>หน่วย</th></tr>

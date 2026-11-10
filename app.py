@@ -41,6 +41,24 @@ def format_result(result) -> list[tuple[str, str, str]]:
     ]
 
 
+INPUT_ROWS = (
+    ("vcc", "VCC", "V"),
+    ("r1", "R1", "Ω"),
+    ("r2", "R2", "Ω"),
+    ("rc", "RC", "Ω"),
+    ("re", "RE", "Ω"),
+    ("beta", "beta", ""),
+    ("vbe", "VBE", "V"),
+)
+
+
+def format_inputs(inputs) -> list[tuple[str, str, str]]:
+    return [
+        (label, f"{getattr(inputs, field):g}", unit)
+        for field, label, unit in INPUT_ROWS
+    ]
+
+
 def comparison_rows(analysis) -> list[dict[str, str]]:
     quantities = (
         ("VB", "vb", "V", 1.0, 4),
@@ -100,6 +118,7 @@ def create_app() -> Flask:
             inputs=inputs,
             analysis=analysis,
             rows=format_result(analysis.primary),
+            input_rows=format_inputs(inputs),
             comparison=comparison_rows(analysis),
             region_labels=REGION_LABELS,
         )

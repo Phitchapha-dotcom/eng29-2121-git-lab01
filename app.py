@@ -165,13 +165,14 @@ def _calculate(mode: str, raw):
         validate_inputs(inputs)
         analysis = analyze(inputs)
         return dc_bias.divider_result(analysis.primary), analysis
-    if mode == "fixed":
+    elif mode == "fixed":
         values = dc_bias.parse_fixed(raw)
         return dc_bias.fixed_bias(**values), None
-    if mode == "emitter":
+    elif mode == "emitter":
         values = dc_bias.parse_emitter(raw)
         return dc_bias.emitter_bias(**values), None
-    raise ValidationError("mode", f"โหมดไม่ถูกต้อง: {mode}")
+    else:
+        raise ValidationError("mode", f"โหมดไม่ถูกต้อง: {mode}")
 
 
 def create_app() -> Flask:

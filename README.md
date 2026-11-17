@@ -29,6 +29,24 @@
 ค่าที่คำนวณได้จะเตือนเมื่อ `IB ≤ 0` หรือ `VCE ≤ 0.2 V` ว่าแบบจำลอง
 Forward Active อาจใช้ไม่ได้
 
+### ลิงก์งานและ Commit
+
+- GitHub: https://github.com/Phitchapha-dotcom/eng29-2121-git-lab01
+- Commit SHA ของโค้ด Lab 03 และผลตรวจ A1–A5:
+  `e7071d897da0403b81dec5bb3db9ac0a85659720`
+- ผลตรวจ Browser: [`docs/validation.md`](docs/validation.md)
+
+### AI ช่วยส่วนไหน และนักศึกษาตรวจอะไร
+
+- AI ช่วยร่างสมการ Fixed/Emitter ใน `dc_bias.py`, ปรับ `app.py`/เทมเพลต/สไตล์
+  และบันทึกผลตรวจ Browser ลง `docs/validation.md`
+- นักศึกษาตรวจสูตรกับใบงาน ค่าอ้างอิงที่คำนวณมือ หน่วย และการคงผลเดิมของ
+  Divider รวมทั้งทวนผลใน Browser อย่างน้อยหนึ่งกรณี
+- โค้ดเลือกฟังก์ชันตามโหมดที่ `app._calculate()` ด้วย `if/elif/else`
+  (`"divider"`, `"fixed"`, `"emitter"`); โหมดที่ไม่รู้จักจะไม่ fallback
+- โค้ดแปลงหน่วย A → µA/mA ที่ `dc_bias._result()` ส่วนฟอร์มรับตัวต้านทานเป็น Ω
+  และ `app.py` ทำหน้าที่จัดรูปแบบทศนิยมเพื่อแสดงผลเท่านั้น
+
 ### วิธีรัน
 
 ```powershell

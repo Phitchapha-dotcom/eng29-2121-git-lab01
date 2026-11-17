@@ -2,12 +2,24 @@
 {% block content %}
 <main class="dashboard">
 
+  <nav class="mode-tabs" aria-label="เลือกวงจรไบอัส">
+    {% for key, label in mode_labels.items() %}
+    <a class="mode-tab{% if key == mode %} active{% endif %}"
+       href="{{ url_for('index', mode=key) }}"
+       {% if key == mode %}aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
   <section class="card card-input" aria-labelledby="input-heading">
     <div class="card-head">
       <h2 id="input-heading">พารามิเตอร์นำเข้า</h2>
-      <p class="card-sub">กรอกค่าองค์ประกอบของวงจร</p>
+      <p class="card-sub">{{ mode_labels[mode] }} · กรอกค่าองค์ประกอบของวงจร</p>
     </div>
     <form method="post" action="{{ url_for('calculate') }}" novalidate>
+      <input type="hidden" name="mode" value="{{ mode }}">
+      {% if errors.get("mode") %}
+      <p class="error mode-error" role="alert">{{ errors["mode"] }}</p>
+      {% endif %}
       {% for name, label, unit in fields %}
       <div class="field{% if errors.get(name) %} field-invalid{% endif %}">
         <label for="{{ name }}">{{ label }}</label>
@@ -22,15 +34,17 @@
         {% endif %}
       </div>
       {% endfor %}
-      <button type="submit" class="btn-primary">คำนวณ DC Bias</button>
+      <p class="unit-hint">ตัวต้านทานกรอกเป็น Ω — 1 kΩ = 1,000 Ω, 1 MΩ = 1,000,000 Ω</p>
+      <button type="submit" class="btn-primary">คำนวณ {{ mode_labels[mode] }}</button>
     </form>
   </section>
 
   <section class="card card-circuit" aria-labelledby="circuit-heading">
     <div class="card-head">
       <h2 id="circuit-heading">วงจร</h2>
-      <p class="card-sub">Voltage-divider bias · NPN</p>
+      <p class="card-sub">{{ mode_labels[mode] }} · NPN</p>
     </div>
+    {% if mode == "divider" %}
     <div class="schematic-wrap">
       <svg class="schematic" viewBox="0 0 320 334" role="img"
            aria-label="วงจรขยาย BJT แบบ common emitter พร้อมไบอัสด้วยตัวต้านทานแบ่งแรงดัน">
@@ -91,20 +105,44 @@
       </svg>
     </div>
     <p class="circuit-note">ค่าตัวต้านทานในไดอะแกรมแสดงหน่วยเป็น kΩ</p>
+    {% elif mode == "fixed" %}
+    <div class="mode-summary">
+      <p class="mode-summary-title">Fixed Bias</p>
+      <dl>
+        <div><dt>VCC</dt><dd>{{ circuit.vcc }}</dd></div>
+        <div><dt>RB</dt><dd>{{ circuit.rb }}</dd></div>
+        <div><dt>RC</dt><dd>{{ circuit.rc }}</dd></div>
+        <div><dt>β</dt><dd>{{ circuit.beta }}</dd></div>
+      </dl>
+      <p class="circuit-note">RB จาก VCC ไป Base · Emitter ต่อลงกราวด์</p>
+    </div>
+    {% else %}
+    <div class="mode-summary">
+      <p class="mode-summary-title">Emitter Bias</p>
+      <dl>
+        <div><dt>VCC</dt><dd>{{ circuit.vcc }}</dd></div>
+        <div><dt>RB</dt><dd>{{ circuit.rb }}</dd></div>
+        <div><dt>RC</dt><dd>{{ circuit.rc }}</dd></div>
+        <div><dt>RE</dt><dd>{{ circuit.re }}</dd></div>
+        <div><dt>β</dt><dd>{{ circuit.beta }}</dd></div>
+      </dl>
+      <p class="circuit-note">RB จาก VCC ไป Base · RE จาก Emitter ลงกราวด์</p>
+    </div>
+    {% endif %}
   </section>
 
   <section class="card card-results" aria-labelledby="results-heading">
     <div class="card-head">
       <h2 id="results-heading">จุดทำงาน DC</h2>
-      <p class="card-sub">Operating point</p>
+      <p class="card-sub">{{ mode_labels[mode] }} · Operating point</p>
     </div>
 
-    {% if analysis %}
-    <div class="status status-{{ analysis.primary.region }}">
+    {% if result %}
+    <div class="status status-{{ result.region }}">
       <span class="status-icon" aria-hidden="true">
-        {% if analysis.primary.region == "active" %}
+        {% if result.region == "active" %}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-        {% elif analysis.primary.region == "saturation" %}
+        {% elif result.region == "saturation" %}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3z"></path><path d="M12 9v5"></path><path d="M12 18h.01"></path></svg>
         {% else %}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m15 9-6 6M9 9l6 6"></path></svg>
@@ -112,15 +150,15 @@
       </span>
       <div>
         <p class="status-label">สถานะการทำงาน</p>
-        <p class="status-value">{{ region_labels[analysis.primary.region] }}</p>
+        <p class="status-value">{{ region_labels[result.region] }}</p>
       </div>
     </div>
 
-    {% for warning in analysis.primary.warnings %}
+    {% for warning in result.warnings %}
     <p class="warning" role="alert">{{ warning }}</p>
     {% endfor %}
 
-    {% if analysis.primary.region == "saturation" %}
+    {% if result.region == "saturation" %}
     <p class="note">ค่าด้านล่างเป็นค่าประมาณจากสมการช่วง active (ไม่ใช่จุดทำงานจริง) — VCE จริงใกล้ 0.2 V</p>
     {% endif %}
 
@@ -137,17 +175,26 @@
 
     <div class="criteria">
       <p class="criteria-title">เกณฑ์การจำแนกช่วงการทำงาน</p>
+      {% if mode == "divider" %}
       <ul>
         <li><span class="dot dot-active"></span>Active — VCE ≥ 0.2 V</li>
         <li><span class="dot dot-saturation"></span>Saturation — VCE &lt; 0.2 V</li>
         <li><span class="dot dot-cutoff"></span>Cutoff — VBB ≤ VBE</li>
       </ul>
+      {% else %}
+      <ul>
+        <li><span class="dot dot-active"></span>Active — IB &gt; 0 และ VCE &gt; 0.2 V</li>
+        <li><span class="dot dot-saturation"></span>Saturation — VCE ≤ 0.2 V</li>
+        <li><span class="dot dot-cutoff"></span>Cutoff — IB ≤ 0</li>
+      </ul>
+      {% endif %}
     </div>
     {% else %}
-    <p class="empty-state">แก้ไขค่าที่ไม่ถูกต้องแล้วกด “คำนวณ DC Bias” อีกครั้ง</p>
+    <p class="empty-state">แก้ไขค่าที่ไม่ถูกต้องแล้วกด “คำนวณ {{ mode_labels[mode] }}” อีกครั้ง</p>
     {% endif %}
   </section>
 
+  {% if mode == "divider" %}
   <section class="card card-compare" aria-labelledby="compare-heading">
     <div class="card-head">
       <div>
@@ -191,6 +238,7 @@
     <p class="empty-state">ยังไม่มีผลให้ตรวจทาน</p>
     {% endif %}
   </section>
+  {% endif %}
 
 </main>
 {% endblock %}

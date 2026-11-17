@@ -1,0 +1,41 @@
+# Lab 03 — Browser Acceptance (A1–A5)
+
+วันที่ตรวจ: 17 พฤศจิกายน 2026
+เครื่องมือ: Playwright MCP (`browser_navigate`, `browser_fill_form`, `browser_click`, `browser_snapshot`, `browser_take_screenshot`)
+แอปที่ตรวจ: Flask development server `http://127.0.0.1:5000/` (รันจากโค้ดปัจจุบัน)
+ค่าคงที่ร่วมทุกกรณี: `VCC = 12 V`, `RC = 2.2 kΩ`, `β = 100`, `VBE = 0.70 V`
+หน่วยบนฟอร์ม: ตัวต้านทานกรอกเป็น Ω (`1 kΩ = 1000`, `1 MΩ = 1000000`)
+
+## วิธีอ้างอิงค่าคาดหมาย
+
+- **A1**: ใช้ค่าจากฐาน Lab 2 ก่อนแก้ไข (Divider เดิม) — `IC = 1.229858 mA`, `VCE = 8.052155 V`
+- **A2–A4**: คำนวณมือจากสมการในใบงาน Lab 3
+
+```
+IB = (VCC − VBE) / [RB + (β + 1)·RE]     (Emitter; Fixed ใช้ RE = 0)
+IC = β·IB ,  IE = (β + 1)·IB
+VE = IE·RE ,  VB = VE + VBE
+VC = VCC − IC·RC ,  VCE = VC − VE
+```
+
+- **A5**: ข้อกำหนดในใบงาน — ต้องแจ้งข้อผิดพลาดของ `RB` และหน้าเว็บต้องไม่ล่ม
+- เกณฑ์ตัดสิน: `IC` คลาดเคลื่อนไม่เกิน **±0.01 mA** และ `VCE` ไม่เกิน **±0.02 V**
+- ไม่ได้ใช้ค่าจากโปรแกรมที่กำลังตรวจเป็นค่าอ้างอิง
+
+## ผลการตรวจ
+
+| ID | วิธี / โหมด | อินพุต | ค่าคาดหมาย | ผลจริง (หน้าจอ) | สถานะ | หลักฐาน |
+|---|---|---|---|---|---|---|
+| A1 | Divider Bias — เปิด `/?mode=divider` กรอกฟอร์มแล้วกดปุ่มคำนวณ | `R1 = 100000 Ω`, `R2 = 22000 Ω`, `RE = 1000 Ω` | `IC = 1.2299 mA`, `VCE = 8.0522 V` (ฐาน Lab 2) | `IC = 1.2299 mA`, `VCE = 8.0522 V`; VB `1.9422`, VE `1.2422`, VC `9.2943`, IB `12.299 µA`, IE `1.2422 mA`; Active; Independent check ผ่าน (ผลต่างสูงสุด `2.22e-16`) | **PASS** | Snapshot หน้า `/calculate` (Playwright MCP) |
+| A2 | Fixed Bias — เปิด `/?mode=fixed` กรอกฟอร์มแล้วกดปุ่มคำนวณ | `RB = 1000000 Ω` | `IC = 1.1300 mA`, `VCE = 9.5140 V` | `IC = 1.1300 mA`, `VCE = 9.5140 V`; VB `0.7000`, VE `0.0000`, VC `9.5140`, IB `11.300 µA`, IE `1.1413 mA`; Active | **PASS** | Snapshot หน้า `/calculate` (Playwright MCP) |
+| A3 | Emitter Bias — เปิด `/?mode=emitter` กรอกฟอร์มแล้วกดปุ่มคำนวณ | `RB = 1000000 Ω`, `RE = 1000 Ω` | `IC = 1.0263 mA`, `VCE = 8.7054 V` | `IC = 1.0263 mA`, `VCE = 8.7054 V`; VB `1.7366`, VE `1.0366`, VC `9.7421`, IB `10.263 µA`, IE `1.0366 mA`; Active | **PASS** | Snapshot + [`evidence/lab03-a3-emitter.png`](evidence/lab03-a3-emitter.png) |
+| A4 | Emitter Bias — ใช้ค่าเดิมจาก A3 เปลี่ยนเฉพาะ `RE` เป็น 2 kΩ แล้วกดปุ่มคำนวณ | `RB = 1000000 Ω`, `RE = 2000 Ω` | `IC` ต้องลดลงจาก A3; ค่าคำนวณมือ `IC = 0.9401 mA`, `VCE = 8.0328 V` | `IC = 0.9401 mA` (ลดจาก A3 `1.0263 mA`), `VCE = 8.0328 V`; VB `2.5990`, VE `1.8990`, VC `9.9318`, IB `9.401 µA`, IE `0.9495 mA`; Active | **PASS** | Snapshot หน้า `/calculate` (Playwright MCP) |
+| A5 | Fixed Bias — กรอก `RB = 0` แล้วกดปุ่มคำนวณ | `RB = 0 Ω` | แจ้งข้อผิดพลาดที่ `RB` และหน้าเว็บต้องไม่ล่ม | HTTP `400`; alert `RB ต้องมากกว่า 0` ใต้ช่อง RB (ช่องถูกทำเครื่องหมาย invalid); แสดง empty state “แก้ไขค่าที่ไม่ถูกต้อง…” และไม่มีตารางผลเดิมค้าง | **PASS** | Snapshot + [`evidence/lab03-a5-rb-zero.png`](evidence/lab03-a5-rb-zero.png) |
+
+## หมายเหตุ
+
+- การอ่านผลทุกกรณีทำหลัง submit โดยใช้ `browser_snapshot` ของหน้าล่าสุด ไม่ได้อ่านค่าจากหน้าเว็บก่อน submit
+- A5 มี console error 1 รายการจาก HTTP 400 ของ `POST /calculate` ซึ่งเป็นพฤติกรรมที่คาดหมายของกรณีทดสอบนี้ ไม่ใช่หน้าเว็บล่ม
+- ฟอร์ม Divider ยังคงแสดง Independent check (Thevenin analytic เทียบ nodal solve) และผ่านใน A1
+- เทสต์อัตโนมัติเดิมยังผ่านทั้งหมด: `pytest -q` → **55 passed**
+- ค่าคาดหมาย A1–A4 เป็นค่าที่คำนวณจากสมการใบงาน/ฐาน Lab 2 เนื่องจากยังไม่มีตารางที่ผู้เรียนกรอกเอง ควรยืนยันค่าคาดหมายอีกครั้งเมื่อมีผลแล็บจริง

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lab 03: BJT DC Bias Web App</title>
+  <title>ENG29 2121 · BJT Bias & CE Amplifier Simulator</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -18,17 +18,26 @@
           </svg>
         </span>
         <div class="brand-text">
-          <h1>Lab 03: BJT DC Bias Web App</h1>
-          <p class="subtitle">ENG29 2121 – Common Emitter · Divider / Fixed / Emitter Bias</p>
+          <h1>BJT Bias & CE Amplifier Simulator</h1>
+          <p class="subtitle">ENG29 2121 – Lab 03 Analytical DC Bias · Lab 04 Real ngspice .op / .ac / .tran</p>
         </div>
       </div>
-      <span class="course-badge">Computer Programming for Electrical Engineers</span>
     </header>
+
+    <nav class="site-nav" aria-label="เมนูหลัก">
+      <a class="site-nav-link{% if request.endpoint in ('index', 'calculate') %} active{% endif %}"
+         href="{{ url_for('index') }}">Lab 03 · DC Bias 3 โหมด</a>
+      <a class="site-nav-link{% if request.endpoint in ('simulator', 'simulate') %} active{% endif %}"
+         href="{{ url_for('simulator') }}">Lab 04 · CE Amplifier Simulator</a>
+    </nav>
+
     {% block content %}{% endblock %}
+
     <footer class="site-footer">
       <span>ENG29 2121 — Computer Programming for Electrical Engineers</span>
-      <span>DC Operating Point · Divider / Fixed / Emitter Bias</span>
+      <span>Analytical DC Bias + ngspice .op / .ac / .tran</span>
     </footer>
   </div>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -3,3 +3,8 @@ __pycache__/
 .venv/
 .env
 .playwright-mcp/
+.pytest_cache/
+.opencode/
+*.log
+run.log
+circuit.cir

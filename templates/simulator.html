@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="simulator">
+
+  <section class="card sim-form-card" aria-labelledby="sim-input-heading">
+    <div class="card-head">
+      <h2 id="sim-input-heading">CE Voltage Divider Reference</h2>
+      <p class="card-sub">NPN Q1 · RE ไม่มี bypass · หนึ่งวงจรอ้างอิงสำหรับ Lab 04</p>
+    </div>
+
+    <div class="sim-schematic-wrap">
+      <svg class="schematic sim-schematic" viewBox="0 0 430 340" role="img"
+           aria-label="วงจรขยาย common-emitter แบบ voltage divider พร้อม Cin, Cout และ RL">
+        <!-- VCC rail -->
+        <line x1="120" y1="30" x2="300" y2="30"></line>
+        <line x1="210" y1="30" x2="210" y2="18"></line>
+        <text x="210" y="12" class="sch-value" text-anchor="middle">VCC = {{ circuit.vcc }}</text>
+
+        <!-- R1 -->
+        <line x1="150" y1="30" x2="150" y2="44"></line>
+        <rect x="142" y="44" width="16" height="46" rx="3"></rect>
+        <line x1="150" y1="90" x2="150" y2="120"></line>
+
+        <!-- R2 -->
+        <rect x="142" y="150" width="16" height="46" rx="3"></rect>
+        <line x1="150" y1="120" x2="150" y2="150"></line>
+        <line x1="150" y1="196" x2="150" y2="286"></line>
+
+        <!-- base node and transistor -->
+        <circle cx="150" cy="120" r="3" class="sch-dot"></circle>
+        <line x1="150" y1="120" x2="226" y2="120"></line>
+        <line x1="226" y1="120" x2="226" y2="156"></line>
+        <line x1="226" y1="156" x2="250" y2="156"></line>
+        <line x1="250" y1="140" x2="250" y2="196" class="sch-thick"></line>
+        <line x1="250" y1="148" x2="300" y2="130"></line>
+        <line x1="250" y1="188" x2="300" y2="206"></line>
+        <polygon points="300,206 286,203 291,194" class="sch-fill"></polygon>
+
+        <!-- RC -->
+        <line x1="300" y1="30" x2="300" y2="44"></line>
+        <rect x="292" y="44" width="16" height="46" rx="3"></rect>
+        <line x1="300" y1="90" x2="300" y2="130"></line>
+
+        <!-- RE -->
+        <line x1="300" y1="206" x2="300" y2="232"></line>
+        <rect x="292" y="232" width="16" height="46" rx="3"></rect>
+        <line x1="300" y1="278" x2="300" y2="286"></line>
+
+        <!-- input source and Cin -->
+        <circle cx="35" cy="170" r="15"></circle>
+        <path d="M26 171q5-8 10 0t10 0" fill="none" stroke-width="1.6"></path>
+        <line x1="35" y1="155" x2="35" y2="120"></line>
+        <line x1="35" y1="120" x2="60" y2="120"></line>
+        <line x1="60" y1="106" x2="60" y2="134"></line>
+        <line x1="70" y1="106" x2="70" y2="134"></line>
+        <line x1="70" y1="120" x2="118" y2="120"></line>
+        <line x1="35" y1="185" x2="35" y2="286"></line>
+        <text x="10" y="175" class="sch-value">Vin</text>
+        <text x="65" y="98" class="sch-sub" text-anchor="middle">Cin</text>
+
+        <!-- collector output, Cout and RL -->
+        <line x1="300" y1="130" x2="332" y2="130"></line>
+        <line x1="332" y1="116" x2="332" y2="144"></line>
+        <line x1="342" y1="116" x2="342" y2="144"></line>
+        <line x1="342" y1="130" x2="392" y2="130"></line>
+        <line x1="392" y1="130" x2="392" y2="160"></line>
+        <rect x="384" y="160" width="16" height="50" rx="3"></rect>
+        <line x1="392" y1="210" x2="392" y2="286"></line>
+        <text x="337" y="108" class="sch-sub" text-anchor="middle">Cout</text>
+        <text x="405" y="182">RL</text>
+        <text x="405" y="197" class="sch-sub">{{ circuit.rl }}</text>
+        <text x="360" y="120" class="sch-value">Vout</text>
+
+        <!-- shared ground -->
+        <line x1="35" y1="286" x2="392" y2="286"></line>
+        <line x1="210" y1="286" x2="210" y2="296"></line>
+        <line x1="198" y1="296" x2="222" y2="296"></line>
+        <line x1="203" y1="302" x2="217" y2="302"></line>
+        <line x1="207" y1="308" x2="213" y2="308"></line>
+
+        <!-- labels -->
+        <text x="128" y="68" text-anchor="end">R1</text>
+        <text x="128" y="83" class="sch-sub" text-anchor="end">{{ circuit.r1 }}</text>
+        <text x="128" y="174" text-anchor="end">R2</text>
+        <text x="128" y="189" class="sch-sub" text-anchor="end">{{ circuit.r2 }}</text>
+        <text x="316" y="68">RC</text>
+        <text x="316" y="83" class="sch-sub">{{ circuit.rc }}</text>
+        <text x="316" y="256">RE</text>
+        <text x="316" y="271" class="sch-sub">{{ circuit.re }}</text>
+        <text x="262" y="226" text-anchor="middle">Q1 NPN</text>
+        <text x="262" y="241" class="sch-sub" text-anchor="middle">BF = {{ circuit.bf }}</text>
+      </svg>
+      <p class="circuit-note">Cin/Cout {{ circuit.cin }} / {{ circuit.cout }} · โหลด RL {{ circuit.rl }} · ไม่มี bypass capacitor ที่ RE</p>
+    </div>
+
+    {% if notice %}
+    <div class="sim-error-banner" role="alert">
+      <p class="sim-error-title">ไม่สามารถรันได้ — ไม่มีผลลัพธ์ใหม่แสดง</p>
+      <p class="sim-error-message">{{ notice }}</p>
+      {% if error_log %}
+      <details class="engine-details error-log">
+        <summary>เปิด ngspice log ที่เกี่ยวข้อง</summary>
+        <pre>{{ error_log }}</pre>
+      </details>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('simulate') }}" novalidate id="sim-form">
+      <fieldset class="sim-mode-switch">
+        <legend>โหมดวิเคราะห์</legend>
+        {% for key, label in mode_labels.items() %}
+        <label class="sim-mode-option">
+          <input type="radio" name="mode" value="{{ key }}"
+                 {% if mode == key %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+        {% endfor %}
+      </fieldset>
+      {% if errors.get("mode") %}<p class="error mode-error" role="alert">{{ errors["mode"] }}</p>{% endif %}
+
+      {% set scopes = {"circuit": "all", "source": "tran", "ac": "ac", "tran": "tran"} %}
+      {% for group_key, group_title, group_badge, fields in groups %}
+      <fieldset class="sim-group" data-sim-group="{{ group_key }}"
+                data-sim-scope="{{ scopes[group_key] }}">
+        <legend>
+          {{ group_title }}
+          <span class="group-badge">{{ group_badge }}</span>
+        </legend>
+        <div class="sim-field-grid">
+          {% for name, label, unit in fields %}
+          <div class="field{% if errors.get(name) %} field-invalid{% endif %}">
+            <label for="sim-{{ name }}">{{ label }}</label>
+            <div class="input-wrap">
+              <input id="sim-{{ name }}" name="{{ name }}" type="text"
+                     inputmode="decimal" value="{{ values.get(name, '') }}"
+                     {% if errors.get(name) %}aria-invalid="true" aria-describedby="sim-{{ name }}-error"{% endif %}>
+              {% if unit %}<span class="unit">{{ unit }}</span>{% endif %}
+            </div>
+            {% if errors.get(name) %}<p class="error" id="sim-{{ name }}-error" role="alert">{{ errors[name] }}</p>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </fieldset>
+      {% endfor %}
+
+      <p class="unit-hint">
+        ค่าตัวต้านทานเป็น Ω · C เป็น µF · Amplitude เป็น mV peak ·
+        ค่าเริ่มต้นคือ baseline fixture; ผลตัวเลขและกราฟจะแสดงหลังรัน ngspice จริงเท่านั้น
+      </p>
+      <button type="submit" class="btn-primary">Run {{ mode_short[mode] }} ด้วย ngspice</button>
+    </form>
+  </section>
+
+  <div class="sim-results">
+
+    {% if result and result.op %}
+    <section class="card" aria-labelledby="op-heading">
+      <div class="card-head">
+        <h2 id="op-heading">DC Operating Point</h2>
+        <p class="card-sub">
+          <span class="chip chip-spice">SPICE</span> ngspice-{{ result.engine.version if result.engine else "47" }} <code>.op</code> จากรอบล่าสุด ·
+          <span class="chip chip-analytical">Analytical</span> อ้างอิง <code>dc_bias.py</code>
+        </p>
+      </div>
+      <div class="metric-grid">
+        <div class="metric">
+          <p class="metric-label">V<sub>B</sub></p>
+          <p class="metric-value">{{ "%.4f"|format(result.op.vb) }} V</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">V<sub>E</sub></p>
+          <p class="metric-value">{{ "%.4f"|format(result.op.ve) }} V</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">V<sub>C</sub></p>
+          <p class="metric-value">{{ "%.4f"|format(result.op.vc) }} V</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">V<sub>CE</sub></p>
+          <p class="metric-value">{{ "%.4f"|format(result.op.vce) }} V</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">I<sub>C</sub></p>
+          <p class="metric-value">{{ "%.4f"|format(result.op.ic * 1000) }} mA</p>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="card sim-status-card" aria-labelledby="sim-status-heading">
+      <div class="card-head">
+        <h2 id="sim-status-heading">Run Status & Provenance</h2>
+        <p class="card-sub">แยกผล ngspice ออกจาก analytical reference อย่างชัดเจน</p>
+      </div>
+
+      <div class="run-status run-{{ run_status }}">
+        <span class="run-dot" aria-hidden="true"></span>
+        <div>
+          <p class="run-label">สถานะการรัน</p>
+          <p class="run-value">
+            {% if run_status == "success" %}ngspice สำเร็จ — แสดงผลจากรอบล่าสุด
+            {% elif run_status == "error" %}ผิดพลาด — ไม่มีผลลัพธ์ใหม่
+            {% else %}ยังไม่ได้รัน{% endif %}
+          </p>
+        </div>
+      </div>
+
+      {% if result %}
+      <p class="provenance-note">
+        ตัวเลขทุกตัวในหน้านี้ parse จากไฟล์ <code>wrdata</code> ที่ ngspice เขียนใน working directory ของรอบนั้น
+        ไม่มีค่า Gain, f<sub>L</sub>, f<sub>H</sub> หรือ waveform ใดถูก hard-code
+      </p>
+      {% elif notice %}
+      <dl class="sim-meta">
+        <div><dt>Analysis</dt><dd>{{ mode_labels[mode] }}</dd></div>
+        <div><dt>Engine</dt><dd><span class="chip chip-error">ยังไม่ได้รับผลจาก ngspice</span></dd></div>
+      </dl>
+      <p class="provenance-note">
+        ระบบแสดงเฉพาะ error ที่เกิดขึ้นจริง และไม่คงกราฟหรือค่าจากรอบก่อนหน้าไว้ในสถานะสำเร็จ
+      </p>
+      {% else %}
+      <p class="empty-state">
+        เลือกโหมด ตรวจค่าอินพุต แล้วกด “Run {{ mode_short[mode] }} ด้วย ngspice”
+        ผลจะมาจาก subprocess จริงของ ngspice
+      </p>
+      {% endif %}
+
+      {% for warning in warnings %}
+      <p class="warning" role="status">{{ warning }}</p>
+      {% endfor %}
+    </section>
+
+    {% if result and result.op and result.engine and result.engine.command %}
+    <section class="card" aria-labelledby="engine-heading">
+      <div class="card-head">
+        <h2 id="engine-heading">Engine Details</h2>
+        <p class="card-sub">Command และ log จากรอบล่าสุด</p>
+      </div>
+      <details class="engine-details">
+        <summary>Command</summary>
+        <pre>{{ result.engine.command }}</pre>
+      </details>
+      {% if result.engine.log %}
+      <details class="engine-details">
+        <summary>ngspice log (run.log)</summary>
+        <pre>{{ result.engine.log }}</pre>
+      </details>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if result and result.ac %}
+    <section class="card" aria-labelledby="ac-heading">
+      <div class="card-head">
+        <div>
+          <h2 id="ac-heading">AC Frequency Response</h2>
+          <p class="card-sub"><span class="chip chip-spice">SPICE</span> ngspice <code>.ac</code> · reference Vin = node <code>in</code>, Vout = node <code>out</code></p>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric">
+          <p class="metric-label">จุดอ้างอิง (ใกล้ 1 kHz)</p>
+          <p class="metric-value">{{ "%.2f"|format(ac_summary.frequency) }} Hz</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">|Vout / Vin|</p>
+          <p class="metric-value">{{ "%.3f"|format(ac_summary.gain_ratio) }} ×</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Gain magnitude</p>
+          <p class="metric-value">{{ "%.2f"|format(ac_summary.gain_db) }} dB</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Phase (Vin → Vout)</p>
+          <p class="metric-value">{{ "%.1f"|format(ac_summary.phase) }}°</p>
+        </div>
+      </div>
+
+      <div class="chart-block">
+        <h3>Gain magnitude <span class="muted">(dB)</span></h3>
+        {{ ac_gain_chart|safe }}
+      </div>
+      <div class="chart-block">
+        <h3>Phase <span class="muted">(degrees — แปลงจาก ngspice <code>vp()</code> ซึ่งเป็น radian)</span></h3>
+        {{ ac_phase_chart|safe }}
+      </div>
+
+      <div class="cutoff-grid">
+        <div class="metric">
+          <p class="metric-label">f<sub>L</sub> (−3 dB, จาก sweep)</p>
+          <p class="metric-value">
+            {% if ac_low_cutoff %}{{ "%.3g"|format(ac_low_cutoff) }} Hz{% else %}<span class="not-determined">not determined in sweep range</span>{% endif %}</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">f<sub>H</sub> (−3 dB, จาก sweep)</p>
+          <p class="metric-value">
+            {% if ac_high_cutoff %}{{ "%.3g"|format(ac_high_cutoff) }} Hz{% else %}<span class="not-determined">not determined in sweep range</span>{% endif %}</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">ช่วง sweep จริง</p>
+          <p class="metric-value">{{ "%.3g"|format(ac_sweep[0]) }} – {{ "%.3g"|format(ac_sweep[1]) }} Hz</p>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Frequency (Hz)</th>
+              <th scope="col" class="num">Gain (dB)</th>
+              <th scope="col" class="num">|Vout/Vin|</th>
+              <th scope="col" class="num">Phase (°)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in ac_rows %}
+            <tr>
+              <td>{{ "%.4g"|format(row.f) }}</td>
+              <td class="num">{{ "%.2f"|format(row.gain_db) }}</td>
+              <td class="num">{{ "%.3f"|format(row.gain_ratio) }}</td>
+              <td class="num">{{ "%.1f"|format(row.phase) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="assumption-note">
+        ไม่มี analytical AC model ใน Lab นี้: f<sub>L</sub>/f<sub>H</sub> คำนวณจากจุดตัด −3 dB ของข้อมูลจริงในช่วง sweep เท่านั้น;
+        หากไม่มีจุดตัด ระบบจะไม่สร้างตัวเลขขึ้นเอง.
+      </p>
+    </section>
+    {% endif %}
+
+    {% if result and result.tran %}
+    <section class="card" aria-labelledby="tran-heading">
+      <div class="card-head">
+        <div>
+          <h2 id="tran-heading">Transient Response</h2>
+          <p class="card-sub"><span class="chip chip-spice">SPICE</span> ngspice <code>.tran</code> · วัด Vin ที่ node <code>in</code> และ Vout ที่ node <code>out</code></p>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric">
+          <p class="metric-label">Vin peak (ช่วงท้าย)</p>
+          <p class="metric-value">{{ "%.2f"|format(tran_summary.vin_peak * 1000) }} mV</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Vout peak (ช่วงท้าย)</p>
+          <p class="metric-value">{{ "%.2f"|format(tran_summary.vout_peak * 1000) }} mV</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">อัตราขยายจาก waveform</p>
+          <p class="metric-value">{{ "%.3f"|format(tran_summary.gain) }} ×</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">เฟส / ทิศทาง</p>
+          <p class="metric-value">{% if tran_summary.inverted %}กลับเฟส (180°){% else %}ไม่กลับเฟส{% endif %}</p>
+        </div>
+      </div>
+
+      <div class="chart-block">
+        <h3>Vin / Vout <span class="muted">(V เทียบ ms)</span></h3>
+        {{ tran_chart|safe }}
+      </div>
+
+      <dl class="sim-meta sim-meta-compact">
+        <div><dt>จำนวนจุดที่ plot</dt><dd>{{ tran_points }}</dd></div>
+        <div><dt>ช่วงจำลอง</dt><dd>{{ "%.3g"|format(result.inputs.tstop_s * 1e3) }} ms</dd></div>
+        <div><dt>รอบของสัญญาณ</dt><dd>{{ "%.2f"|format(tran_summary.cycles) }} cycles</dd></div>
+      </dl>
+      <p class="assumption-note">
+        แอมพลิจูด/ความถี่ที่ใช้คือค่าจากฟอร์ม; waveform นี้เปลี่ยนตาม Source input ของ ngspice ไม่ใช่ภาพตัวอย่าง.
+      </p>
+    </section>
+    {% endif %}
+
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='simulator.js') }}" defer></script>
+{% endblock %}

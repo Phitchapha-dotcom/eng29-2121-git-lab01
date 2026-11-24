@@ -72,3 +72,39 @@ python -m venv .venv
 ทุกครั้ง บันทึกผลลง [`docs/validation.md`](docs/validation.md) พร้อมวิธีตรวจและหลักฐาน
 
 ผลตรวจ A1–A5 ล่าสุด: ผ่านทั้งหมด 5 กรณี (ดูตารางและข้อความผลจาก snapshot ใน `docs/validation.md`)
+
+## Lab 04 — BJT CE Amplifier Simulator (ngspice)
+
+หน้า `/simulator` รันวิเคราะห์ DC (`.op`), AC (`.ac`) และ transient (`.tran`) กับวงจร
+CE voltage-divider อ้างอิงวงจรเดียว (ไม่มี circuit editor และไม่มี CE bypass) — Lab 03
+ทั้ง 3 โหมดยังอยู่ที่ `/` และ `/calculate` เหมือนเดิม
+
+ทุกตัวเลขบนหน้าเว็บอ่านจากไฟล์ `wrdata` ที่ ngspice เขียนใน working directory ของรอบนั้น:
+
+- `spice_engine.build_netlist()` สร้าง netlist, `subprocess.run([...])` เรียก ngspice แบบ `shell=False`, มี timeout และใช้ `TemporaryDirectory()` ต่อรอบ
+- model ที่ใช้: `QNPN NPN(IS=1e-14 BF=<BF from form> VAF=100)`
+- phase ของ ngspice ถูกแปลง rad → degree; `fL`/`fH` หาจากจุดตัด −3 dB ของ sweep จริงเท่านั้น
+  ถ้า sweep ไม่มีจุดตัดจะแสดง `not determined in sweep range` (ไม่สร้างตัวเลขขึ้นเอง)
+- ไม่พบ ngspice → HTTP 503; solver ล้มเหลว → HTTP 502 พร้อม log
+- แยก provenance ระหว่างผล SPICE กับ analytical reference (`dc_bias.py` เฉพาะ DC)
+
+### ติดตั้ง ngspice และรัน
+
+ต้องมี `ngspice_con.exe` (console build) ใน `PATH` หรือระบุ path ผ่านตัวแปรสภาพแวดล้อม:
+
+```powershell
+$env:NGSPICE_BIN = "C:\Users\b6826727\AppData\Local\Programs\ngspice\Spice64\bin\ngspice_con.exe"
+.venv\Scripts\python -m flask --app app run
+```
+
+เปิด http://127.0.0.1:5000/simulator เลือก DC / AC / TRAN แล้วกดปุ่มรัน
+
+### ผลตรวจและตัวอย่าง
+
+- ตาราง PASS/FAIL/NOT RUN: [`docs/validation.md`](docs/validation.md)
+- ค่าตัวอย่างจาก `wrdata` จริง + วิธีสร้างซ้ำ: [`docs/samples/lab04-ngspice-sample.md`](docs/samples/lab04-ngspice-sample.md)
+- ไม่ commit ไฟล์รันชั่วคราว (`.venv/`, `.env`, `*.log`, `circuit.cir`, `wrdata`, `.opencode/` ถูก ignore)
+
+```powershell
+.venv\Scripts\python -m pytest -q   # 90 passed, 1 skipped
+```

@@ -79,5 +79,31 @@ Playwright MCP ทำหน้าที่เป็นตัวขับ Chrome 
 - การอ่านผลทุกกรณีทำหลัง submit โดยใช้ `browser_snapshot` ของหน้าล่าสุด ไม่ได้อ่านค่าจากหน้าเว็บก่อน submit
 - A5 มี console error 1 รายการจาก HTTP 400 ของ `POST /calculate` ซึ่งเป็นพฤติกรรมที่คาดหมายของกรณีทดสอบนี้ ไม่ใช่หน้าเว็บล่ม
 - ฟอร์ม Divider ยังคงแสดง Independent check (Thevenin analytic เทียบ nodal solve) และผ่านใน A1
-- เทสต์อัตโนมัติเดิมยังผ่านทั้งหมด: `pytest -q` → **55 passed**
+- เทสต์อัตโนมัติเดิมยังผ่านทั้งหมด: `pytest -q` → **90 passed, 1 skipped** (รวม Lab 04)
 - ค่าคาดหมาย A1–A4 เป็นค่าที่คำนวณจากสมการใบงาน/ฐาน Lab 2 เนื่องจากยังไม่มีตารางที่ผู้เรียนกรอกเอง ควรยืนยันค่าคาดหมายอีกครั้งเมื่อมีผลแล็บจริง
+
+---
+
+# Lab 04 — BJT CE Amplifier Simulator (ngspice)
+
+วันที่ตรวจ: 24 พฤศจิกายน 2026
+เครื่องมือ: `spice_engine` (subprocess จริง) + Flask test client + `pytest -q`
+หมายเหตุ: ตามที่อาจารย์ระบุ **ไม่ใช้ screenshot** เป็นหลักฐาน — เก็บค่าที่อ่านจาก `wrdata` แทน
+
+| ID | รายการที่ตรวจ | วิธีตรวจ | ผลที่ได้ | สถานะ |
+|---|---|---|---|---|
+| L4-1 | DC `.op` จาก ngspice จริง | `POST /simulator` ชุดอินพุตอ้างอิง พร้อม `NGSPICE_BIN` ชี้ `ngspice_con.exe` | HTTP 200; `ngspice-47`; `VB=2.0130 V`, `VCE=7.6920 V`, `IC=1.3441 mA` (ตรงกับค่าที่ parse จาก `wrdata`) | **PASS** |
+| L4-2 | AC `.ac` + cutoff | `POST /simulator` `mode=ac` | HTTP 200; 51 จุด; `gain≈4.78 dB` ที่ 10 Hz; sweep `10 Hz–1 MHz` ไม่มีจุดตัด −3 dB → แสดง `not determined in sweep range` 2 จุด (ไม่ประดิษฐ์ fL/fH); กราฟ SVG 2 ภาพ | **PASS** |
+| L4-3 | TRAN `.tran` + เฟส | `POST /simulator` `mode=tran` | HTTP 200; 1008 จุด; `Vin` peak `10.00 mV`, `Vout` peak `17.59 mV`, แสดง `ms` และข้อความกลับเฟส; กราฟ SVG 1 ภาพ | **PASS** |
+| L4-4 | Lab 03 analytical 3 โหมดยังอยู่ | `pytest -q` (`tests/test_app.py`, `tests/test_bias.py`) | `/` และ `/calculate` ยังรัน Divider/Fixed/Emitter ได้ | **PASS** |
+| L4-5 | error path | `tests/test_simulator.py` | ไม่พบ ngspice → HTTP 503; solver fail → HTTP 502 พร้อม log `singular matrix`; ไม่มีกราฟ/ผลสำเร็จค้าง | **PASS** |
+| L4-6 | ตรวจด้วย Browser จริง (มนุษย์) | เปิด `/simulator` แล้วกด Run ทั้ง 3 โหมด | ยังไม่ได้ทำในรอบนี้ (ใช้ test client + ngspice จริงแทน) | **NOT RUN** |
+
+## หลักฐานแบบ sample และวิธีสร้างซ้ำ
+
+ดู [`docs/samples/lab04-ngspice-sample.md`](samples/lab04-ngspice-sample.md) — เก็บเฉพาะค่าตัวอย่างที่อ่านจาก
+`wrdata` ของรอบจริง พร้อมคำสั่ง PowerShell สำหรับรันซ้ำ ไม่มีการ commit ไฟล์ `circuit.cir`,
+`run.log` หรือ `wrdata` (engine ลบ working directory หลังจบทุกครั้ง)
+
+สรุปคำสั่งตรวจ: `.venv\Scripts\python -m pytest -q` → **90 passed, 1 skipped**
+(1 test ถูก skip เพราะ `ngspice_con` ไม่ได้อยู่ใน `PATH` ของเครื่อง; ตั้ง `NGSPICE_BIN` แล้วรันด้วยตนเองตาม sample)

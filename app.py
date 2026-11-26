@@ -45,7 +45,6 @@ FORM_FIELDS = {
         ("freq_hz", "Frequency (Hz)", "Hz"),
         ("fstart_hz", "Start Frequency (Hz)", "Hz"),
         ("fstop_hz", "Stop Frequency (Hz)", "Hz"),
-        ("ppd", "Points per decade", ""),
         ("tstep_us", "Time step (μs)", "μs"),
         ("tstop_ms", "Time stop (ms)", "ms"),
     ),
@@ -54,7 +53,6 @@ FORM_FIELDS = {
         ("freq_hz", "Frequency (Hz)", "Hz"),
         ("fstart_hz", "Start Frequency (Hz)", "Hz"),
         ("fstop_hz", "Stop Frequency (Hz)", "Hz"),
-        ("ppd", "Points per decade", ""),
     ),
     "tran": (
         ("amp_mv", "Amplitude (mV peak)", "mV"),

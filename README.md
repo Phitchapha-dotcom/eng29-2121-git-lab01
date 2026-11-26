@@ -75,6 +75,18 @@ python -m venv .venv
 
 ## Lab 04 — BJT CE Amplifier Simulator (ngspice)
 
+### GitHub Repository and Commit
+
+- GitHub: https://github.com/Phitchapha-dotcom/eng29-2121-git-lab01
+- Commit SHA ของโค้ด Lab 4: `cece396ab46e301aabdf62c8d067a3f5dca85020`
+
+### AI ช่วยส่วนไหน และนักศึกษาตรวจอะไร
+
+- AI ช่วยสร้าง netlist, รัน ngspice, สร้างตารางเปรียบเทียบ DC, และแปลงผลลัพธ์เป็นรูปแบบเว็บ
+- AI จัดการ timeout, error handling, และการแปลง phase rad→degree/fL/fH จากจุดตัด −3 dB
+- นักศึกษาตรวจผลลัพธ์ DC/AC/Transient เทียบกับรายงานและตรวจสอบค่าตัวอย่างใน `docs/samples/lab04-ngspice-sample.md`
+- นักศึกษายืนยันการทำงานของทุกโหมดและบันทึกผลลง `docs/validation.md`
+
 หน้า `/simulator` รันวิเคราะห์ DC (`.op`), AC (`.ac`) และ transient (`.tran`) กับวงจร
 CE voltage-divider อ้างอิงวงจรเดียว (ไม่มี circuit editor และไม่มี CE bypass) — Lab 03
 ทั้ง 3 โหมดยังอยู่ที่ `/` และ `/calculate` เหมือนเดิม

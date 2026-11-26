@@ -84,6 +84,21 @@ Playwright MCP ทำหน้าที่เป็นตัวขับ Chrome 
 
 ---
 
+## Lab 4 — ngspice Simulation Testing
+
+หัวข้อนี้รวมการทดสอบ ngspice ขั้นต่ำ ข้อ L4-1 ถึง L4-6 ซึ่งครอบคลัวทั้งการทดสอบ DC operating point, AC analysis, TRAN simulation และการตรวจสอบโมเดล BJT ร่วมกับการทดสอบเบราว์เซอร์ B1–B8
+
+| ID | รายการที่ตรวจ | วิธีตรวจ | ผลที่ได้ | สถานะ |
+|---|---|---|---|---|
+| L4-1 | DC `.op` จาก ngspice จริง | `POST /simulator` ชุดอินพุตอ้างอิง พร้อม `NGSPICE_BIN` ชี้ `ngspice_con.exe` | HTTP 200; ngspice-47; ผล DC อ่านจาก wrdata จริง (Vb=2.0130V, Vce=7.6920V, Ic=1.3441mA) | **PASS** |
+| L4-2 | AC `.ac` + cutoff | `POST /simulator` `mode=ac` | HTTP 200; 51 จุด; gain≈4.78 dB ที่ 10 Hz; sweep 10 Hz–1 MHz ไม่มีจุดตัด −3 dB → แสดง `not determined in sweep range`; กราฟ SVG 2 ภาพ | **PASS** |
+| L4-3 | TRAN `.tran` + เฟส | `POST /simulator` `mode=tran` | HTTP 200; 1008 จุด; Vin peak 10.00 mV, Vout peak 17.59 mV, แสดง ms และข้อความกลับเฟส; กราฟ SVG 1 ภาพ | **PASS** |
+| L4-4 | Lab 03 analytical 3 โหมดยังอยู่ | `pytest -q` (`tests/test_app.py`, `tests/test_bias.py`) | `/` และ `/calculate` ยังรัน Divider/Fixed/Emitter ได้ | **PASS** |
+| L4-5 | error path | `tests/test_simulator.py` | ไม่พบ ngspice → HTTP 503; solver fail → HTTP 502 พร้อม log `singular matrix`; ไม่มีกราฟ/ผลสำเร็จค้าง | **PASS** |
+| L4-6 | ตรวจด้วย Browser จริง (B1–B8) | Playwright MCP เปิด `/simulator` ทดสอบทุกกรณี B1-B8 | ดูผลข้อบน | **PASS** |
+
+---
+
 ## บันทึกการตรวจ Browser Acceptance (B1–B8)
 
 วันที่: 24 พฤศจิกายน 2026
@@ -107,17 +122,6 @@ Playwright MCP ทำหน้าที่เป็นตัวขับ Chrome 
 - **ข้อจำกัด**: ข้อมูลอ้างอิงจาก ngspiceอาจแตกต่างจาก analytical reference เนื่องจากโมเดล BJT ที่แตกต่างกัน — เป็นเรื่องปกติและต้องอธิบายในรายงาน
 
 ---
-
-## การทดสอบ ngspice ขั้นต่ำ (L4-1 to L4-6)
-
-| ID | รายการที่ตรวจ | วิธีตรวจ | ผลที่ได้ | สถานะ |
-|---|---|---|---|---|
-| L4-1 | DC `.op` จาก ngspice จริง | `POST /simulator` ชุดอินพุตอ้างอิง พร้อม `NGSPICE_BIN` ชี้ `ngspice_con.exe` | HTTP 200; ngspice-47; ผล DC อ่านจาก wrdata จริง (Vb=2.0130V, Vce=7.6920V, Ic=1.3441mA) | **PASS** |
-| L4-2 | AC `.ac` + cutoff | `POST /simulator` `mode=ac` | HTTP 200; 51 จุด; gain≈4.78 dB ที่ 10 Hz; sweep 10 Hz–1 MHz ไม่มีจุดตัด −3 dB → แสดง `not determined in sweep range`; กราฟ SVG 2 ภาพ | **PASS** |
-| L4-3 | TRAN `.tran` + เฟส | `POST /simulator` `mode=tran` | HTTP 200; 1008 จุด; Vin peak 10.00 mV, Vout peak 17.59 mV, แสดง ms และข้อความกลับเฟส; กราฟ SVG 1 ภาพ | **PASS** |
-| L4-4 | Lab 03 analytical 3 โหมดยังอยู่ | `pytest -q` (`tests/test_app.py`, `tests/test_bias.py`) | `/` และ `/calculate` ยังรัน Divider/Fixed/Emitter ได้ | **PASS** |
-| L4-5 | error path | `tests/test_simulator.py` | ไม่พบ ngspice → HTTP 503; solver fail → HTTP 502 พร้อม log `singular matrix`; ไม่มีกราฟ/ผลสำเร็จค้าง | **PASS** |
-| L4-6 | ตรวจด้วย Browser จริง (B1–B8) | Playwright MCP เปิด `/simulator` ทดสอบทุกกรณี B1-B8 | ดูผลข้อบน | **PASS** |
 
 ## หลักฐานแบบ sample และวิธีสร้างซ้ำ
 

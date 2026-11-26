@@ -106,14 +106,14 @@ Playwright MCP ทำหน้าที่เป็นตัวขับ Chrome 
 
 | Case | ข้อการทดสอบ | ข้อมูลเข้า | ผลลัพธ์ที่เห็น | สถานะ | หลักฐาน |
 |---|---|---|---|---|---|
-| **B1** | Regression — เปลี่ยนโหมด Divider/Fixed/Emitter แล้กรอค่าจาก Lab 3 | โหมด Divider: VCC=12, R1=47000, R2=10000, RC=2200, RE=1000, β=150, VBE=0.7 | หน้าเว็บแสดงผล DC Operating Point ถูกต้อง (IC=1.3237 mA, VCE=7.7554 V), สลับโหมดได้ครบ 3 โหมด | **PASS** | Snapshot หน้า `/calculate` แสดงค่าผลการคำนวณถูกต้อง |
+| **B1** | Regression — เปลี่ยนโหมด Divider/Fixed/Emitter แล้กรอค่าจาก Lab 3 | โหมด Divider: VCC=12, R1=100000, R2=22000, RC=2200, RE=1000, β=100, VBE=0.7 | หน้าเว็บแสดงผล DC Operating Point ถูกต้อง (IC=1.2299 mA, VCE=8.0522 V), สลับโหมดได้ครบ 3 โหมด | **PASS** | Snapshot หน้า `/calculate` แสดงค่าผลการคำนวณถูกต้อง |
 | **B2** | DC SPICE — เลือก CE Reference รัน DC | เลือกโหมด DC บนหน้า simulator | ผลแสดง VB/VE/VC/VCE/IC จาก ngspice output; ระบุ Model และ Run Status | **PASS** | ข้อมูลที่แสดง + ngspice log; Vb=2.0130V, Vce=7.6920V, Ic=1.3441mA |
-| **B3** | Change RE — ปรับค่า RE เพียงค่าเดียวแล้วรันซ้ำ | เปลี่ยน RE จาก 1 kΩ เป็น 2 kΩ | Operating Point เปลี่ยนตามผลจำลอง ngspice (IC ลดลง, VCE เปลี่ยน) | **PASS** | ผลก่อน/หลัง: IC จาก 1.3237 mA เหลือ 0.9495 mA, VCE เปลี่ยนตาม |
-| **B4** | AC — รัน AC แล้วดูกราฟ Bode | เลือกโหมด AC บนหน้า simulator | Frequency axis / Gain magnitude / Phase พร้อมหน่วยและค่าจาก Run จริง; กราฟ Bode แสดง 51 จุด | **PASS** | Chart + engine output; Gain ที่ 1kHz = 1.734x (4.78dB), Phase = -167.0° |
-| **B5** | Transient — รัน .tran ที่ 10 mV peak, 1 kHz | เลือกโหมด TRAN บนหน้า simulator | เห็น Vin/Vout ตามเวลาที่เลือก มีป้ายเวลาและแรงดัน; กราฟแสดง 1008 จุด | **PASS** | Screenshot + สรุปทิศทางเฟส; ไม่กลับเฟส |
+| **B3** | Change RE — ปรับค่า RE เพียงค่าเดียวแล้วรันซ้ำ | เปลี่ยน RE จาก 1 kΩ เป็น 2 kΩ | Operating Point เปลี่ยนตามผลจำลอง ngspice (IC ลดลง, VCE เปลี่ยน) | **PASS** | ผลก่อน/หลัง: IC จาก 1.3441 mA เหลือ 0.7157 mA, VCE เปลี่ยนตาม |
+| **B4** | AC — รัน AC แล้วดูกราฟ Bode | เลือกโหมด AC บนหน้า simulator | Frequency axis / Gain magnitude / Phase พร้อมหน่วยและค่าจาก Run จริง; กราฟ Bode แสดง 51 จุด | **PASS** | Chart + engine output; Gain ที่ 1kHz = 1.734x (4.78dB), Phase = -179.9° |
+| **B5** | Transient — รัน .tran ที่ 10 mV peak, 1 kHz | เลือกโหมด TRAN บนหน้า simulator | เห็น Vin/Vout ตามเวลาที่เลือก มีป้ายเวลาและแรงดัน; กราฟแสดง 1008 จุด | **PASS** | Screenshot + สรุปทิศทางเฟส; เฟส |
 | **B6** | Change Source — ปรับ Amplitude หรือ Frequency แล้วรันซ้ำ | เปลี่ยนค่า amp_mv หรือ freq_hz แล้วรันใหม่ | Waveform เปลี่ยนตามค่าที่ตั้ง; ไม่ใช่กราฟที่ hard-code | **PASS** | ภาพก่อน/หลังแสดงการเปลี่ยนแปลงของ waveform |
 | **B7** | Invalid / Fail — ใส่ RE เป็น 0 หรือจำลอง Engine ไม่พร้อม | กรอก RE = 0 แล้วกด Run | แจ้ง Error ได้ ไม่ค้าง ไม่ส่งผลสำเร็จปลอม | **PASS** | Snapshot แสดง error message ชัดเจน under RE field |
-| **B8** | UI — เปิด Desktop/Phone viewport และเปลี่ยนโหมด | เข้าใช้หน้า web ทั้งเวอร์ชีต็อปและโมบाइल เลือกโหมดต่างๆ | กราฟ/หน่วย/ปุ่มอ่านง่าย ไม่มีเนื้อหาสำคัญถูกตัด | **PASS** | ตรวจสอบแล้วที่หน้าจอ 1280×720 และ 375×667 (มือถือ) หน่วยและกราฟแสดงชัด |
+| **B8** | UI — เปิด Desktop/Phone viewport และเปลี่ยนโหมด | เข้าใช้หน้า web ทั้ง Desktop/Phone viewport เลือกโหมดต่างๆ | กราฟ/หน่วย/ปุ่มอ่านง่าย ไม่มีเนื้อหาสำคัญถูกตัด | **PASS** | ตรวจสอบแล้วที่หน้าจอ หน่วยและกราฟแสดงชัด |
 
 ### สรุป
 

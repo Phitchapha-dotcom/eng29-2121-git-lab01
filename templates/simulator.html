@@ -119,7 +119,7 @@
       </fieldset>
       {% if errors.get("mode") %}<p class="error mode-error" role="alert">{{ errors["mode"] }}</p>{% endif %}
 
-      {% set scopes = {"circuit": "all", "ac": "ac", "tran": "tran"} %}
+      {% set scopes = {"circuit": "all", "ac": "ac", "tran": "tran", "source": "all"} %}
       {% for group_key, group_title, group_badge, fields in groups %}
       <fieldset class="sim-group" data-sim-group="{{ group_key }}"
                 data-sim-scope="{{ scopes[group_key] }}">

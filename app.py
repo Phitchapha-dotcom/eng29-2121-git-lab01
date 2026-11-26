@@ -28,6 +28,12 @@ MODE_LABELS = {
 mode_short = {"dc": "DC", "ac": "AC", "tran": "TRAN"}
 mode_tabs = {"dc": "DC Bias", "ac": "AC Sweep", "tran": "Transient"}
 
+# Source group: Amplitude and Frequency (available in all modes)
+SOURCE_FIELDS = (
+    ("amp_mv", "Amplitude (mV peak)", "mV"),
+    ("freq_hz", "Frequency (Hz)", "Hz"),
+)
+
 # Form fields definition - used by the simulator template
 FORM_FIELDS = {
     "circuit": (
@@ -56,8 +62,6 @@ FORM_FIELDS = {
         ("fstop_hz", "Stop Frequency (Hz)", "Hz"),
     ),
     "tran": (
-        ("amp_mv", "Amplitude (mV peak)", "mV"),
-        ("freq_hz", "Frequency (Hz)", "Hz"),
         ("tstep_us", "Time step (μs)", "μs"),
         ("tstop_ms", "Time stop (ms)", "ms"),
     ),
@@ -85,6 +89,7 @@ SIM_FORM = {    "mode": "dc",
 
 # Field groups for the Lab 04 form; the badge names the analysis that uses it.
 SIM_GROUPS = [
+    ("source", "Source", "ALL", SOURCE_FIELDS),
     ("circuit", "Circuit", "ALL", FORM_FIELDS["circuit"]),
     ("ac", "AC sweep", "AC", FORM_FIELDS["ac"]),
     ("tran", "Transient", "TRAN", FORM_FIELDS["tran"]),

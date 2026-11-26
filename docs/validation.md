@@ -79,7 +79,7 @@ Playwright MCP ทำหน้าที่เป็นตัวขับ Chrome 
 - การอ่านผลทุกกรณีทำหลัง submit โดยใช้ `browser_snapshot` ของหน้าล่าสุด ไม่ได้อ่านค่าจากหน้าเว็บก่อน submit
 - A5 มี console error 1 รายการจาก HTTP 400 ของ `POST /calculate` ซึ่งเป็นพฤติกรรมที่คาดหมายของกรณีทดสอบนี้ ไม่ใช่หน้าเว็บล่ม
 - ฟอร์ม Divider ยังคงแสดง Independent check (Thevenin analytic เทียบ nodal solve) และผ่านใน A1
-- เทสต์อัตโนมัติเดิมยังผ่านทั้งหมด: `pytest -q` → **90 passed, 1 skipped** (รวม Lab 04)
+- เทสต์อัตโนมัติเดิมยังผ่านทั้งหมด: `pytest -q` → **91 passed, 1 skipped** (รวม Lab 04)
 - ค่าคาดหมาย A1–A4 เป็นค่าที่คำนวณจากสมการใบงาน/ฐาน Lab 2 เนื่องจากยังไม่มีตารางที่ผู้เรียนกรอกเอง ควรยืนยันค่าคาดหมายอีกครั้งเมื่อมีผลแล็บจริง
 
 ---
@@ -105,5 +105,5 @@ Playwright MCP ทำหน้าที่เป็นตัวขับ Chrome 
 `wrdata` ของรอบจริง พร้อมคำสั่ง PowerShell สำหรับรันซ้ำ ไม่มีการ commit ไฟล์ `circuit.cir`,
 `run.log` หรือ `wrdata` (engine ลบ working directory หลังจบทุกครั้ง)
 
-สรุปคำสั่งตรวจ: `.venv\Scripts\python -m pytest -q` → **90 passed, 1 skipped**
+สรุปคำสั่งตรวจ: `.venv\Scripts\python -m pytest -q` → **91 passed, 1 skipped**
 (1 test ถูก skip เพราะ `ngspice_con` ไม่ได้อยู่ใน `PATH` ของเครื่อง; ตั้ง `NGSPICE_BIN` แล้วรันด้วยตนเองตาม sample)

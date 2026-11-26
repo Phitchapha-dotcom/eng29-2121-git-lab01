@@ -42,6 +42,12 @@ def client():
     return app.test_client()
 
 
+def test_module_app_exposes_all_routes():
+    # `flask --app app run` serves the module-level instance, not create_app().
+    rules = {rule.rule for rule in app_module.app.url_map.iter_rules()}
+    assert {"/", "/simulator", "/calculate", "/simulate"} <= rules
+
+
 def inputs():
     return spice_engine.parse_form(dict(spice_engine.DEFAULT_FORM))
 
@@ -77,7 +83,6 @@ def test_get_simulator_lists_reference_fields(client):
         "rl",
         "cin_uf",
         "cout_uf",
-        "bf",
         "amp_mv",
         "freq_hz",
         "fstart_hz",
@@ -87,6 +92,8 @@ def test_get_simulator_lists_reference_fields(client):
         "tstop_ms",
     ):
         assert f'name="{name}"' in body
+    assert 'name="bf"' not in body
+    assert "BF = 150" in body
     assert 'value="100000"' in body
     assert "ยังไม่ได้รัน" in body
 

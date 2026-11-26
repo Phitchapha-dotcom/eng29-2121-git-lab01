@@ -26,6 +26,7 @@ MODE_LABELS = {
 }
 
 mode_short = {"dc": "DC", "ac": "AC", "tran": "TRAN"}
+mode_tabs = {"dc": "DC Bias", "ac": "AC Sweep", "tran": "Transient"}
 
 # Form fields definition - used by the simulator template
 FORM_FIELDS = {
@@ -38,7 +39,6 @@ FORM_FIELDS = {
         ("rl", "RL (Ω)", ""),
         ("cin_uf", "Cin (μF)", ""),
         ("cout_uf", "Cout (μF)", ""),
-        ("bf", "BF (BJT model)", ""),
     ),
     "source": (
         ("amp_mv", "Amplitude (mV peak)", "mV"),
@@ -65,8 +65,7 @@ FORM_FIELDS = {
 }
 
 # Default form values (baseline fixture)
-SIM_FORM = {
-    "mode": "dc",
+SIM_FORM = {    "mode": "dc",
     "vcc": "12",
     "r1": "100000",
     "r2": "22000",
@@ -84,6 +83,13 @@ SIM_FORM = {
     "tstep_us": "5",
     "tstop_ms": "5",
 }
+
+# Field groups for the Lab 04 form; the badge names the analysis that uses it.
+SIM_GROUPS = [
+    ("circuit", "Circuit", "ALL", FORM_FIELDS["circuit"]),
+    ("ac", "AC sweep", "AC", FORM_FIELDS["ac"]),
+    ("tran", "Transient", "TRAN", FORM_FIELDS["tran"]),
+]
 
 # Lab 03 analytical DC bias (preserved from the original implementation)
 LAB3_MODE_LABELS = {
@@ -319,7 +325,8 @@ def _run_simulation_default(mode, form_values=None, *args, **kwargs):
     to the UI is parsed by the engine from ``wrdata`` files of this run.
     """
 
-    raw = dict(form_values or kwargs.get("form") or {})
+    raw = dict(SIM_FORM)
+    raw.update(form_values or kwargs.get("form") or {})
     inputs = spice_engine.parse_form(raw, mode)
     return spice_engine.simulate(mode, inputs)
 
@@ -370,9 +377,53 @@ def _view_context(result):
         "tran_summary": None,
         "tran_chart": "",
         "tran_points": 0,
+        "dc_comparison": [],
+        "dc_compare_beta": 150.0,
     }
     if result is None:
         return ctx
+
+    op = getattr(result, "op", None)
+    inputs = getattr(result, "inputs", None)
+    if op is not None and inputs is not None:
+        try:
+            analytic = analyze(
+                parse_inputs(
+                    {
+                        "vcc": f"{inputs.vcc:g}",
+                        "r1": f"{inputs.r1:g}",
+                        "r2": f"{inputs.r2:g}",
+                        "rc": f"{inputs.rc:g}",
+                        "re": f"{inputs.re:g}",
+                        "beta": f"{inputs.bf:g}",
+                        "vbe": "0.7",
+                    }
+                )
+            ).primary
+        except (ValidationError, TypeError, ValueError):
+            analytic = None
+        if analytic is not None:
+            rows = []
+            for name, label, unit, scale in (
+                ("vb", "VB", "V", 1.0),
+                ("ve", "VE", "V", 1.0),
+                ("vc", "VC", "V", 1.0),
+                ("vce", "VCE", "V", 1.0),
+                ("ic", "IC", "mA", 1e3),
+            ):
+                spice_value = float(getattr(op, name)) * scale
+                hand_value = float(getattr(analytic, name)) * scale
+                rows.append(
+                    SimpleNamespace(
+                        label=label,
+                        spice=f"{spice_value:.4f}",
+                        analytic=f"{hand_value:.4f}",
+                        delta=f"{abs(spice_value - hand_value):.2e}",
+                        unit=unit,
+                    )
+                )
+            ctx["dc_comparison"] = rows
+            ctx["dc_compare_beta"] = float(inputs.bf)
 
     ac = getattr(result, "ac", None)
     if ac is not None and getattr(ac, "frequency", None):
@@ -438,10 +489,35 @@ def _view_context(result):
     return ctx
 
 
+SCHEMATIC_FIELDS = (
+    ("vcc", "vcc"),
+    ("r1", "r1"),
+    ("r2", "r2"),
+    ("rc", "rc"),
+    ("re", "re"),
+    ("rl", "rl"),
+    ("cin", "cin_uf"),
+    ("cout", "cout_uf"),
+    ("bf", "bf"),
+)
+
+
+def schematic_values(defaults, values):
+    """Schematic labels follow the values that were actually simulated."""
+    circuit = dict(defaults)
+    for target, field in SCHEMATIC_FIELDS:
+        try:
+            circuit[target] = float(values.get(field))
+        except (TypeError, ValueError):
+            continue
+    return circuit
+
+
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
     app.config["MODE_LABELS"] = MODE_LABELS
+    app.config["MODE_TABS"] = mode_tabs
     app.config["SIM_FORM"] = SIM_FORM
     app.config["NGSPICE_BIN"] = NGSPICE_BIN
     app.config["SHOW_BJT_MODEL"] = False
@@ -458,6 +534,7 @@ def create_app():
         "cin": 10,
         "cout": 10,
         "rl": 10000,
+        "bf": 150,
     }
 
     def render_dashboard(mode, values, errors=None, result=None, analysis=None):
@@ -501,12 +578,7 @@ def create_app():
             result = None
             run_status = "idle"
             # Build groups for the template
-            groups = [
-                ("circuit", "Circuit", "Circuit", FORM_FIELDS["circuit"]),
-                ("source", "Source", "Source", FORM_FIELDS["source"]),
-                ("ac", "AC", "AC", FORM_FIELDS["ac"]),
-                ("tran", "TRAN", "TRAN", FORM_FIELDS["tran"]),
-            ]
+            groups = SIM_GROUPS
             return render_template(
                 "simulator.html",
                 mode="dc",
@@ -526,16 +598,12 @@ def create_app():
             )
 
         mode = request.form.get("mode", "dc")
+        form_values = dict(request.form)
 
         # Validate mode
         valid_modes = set(MODE_LABELS.keys())
         if mode not in valid_modes:
-            groups = [
-                ("circuit", "Circuit", "Circuit", FORM_FIELDS["circuit"]),
-                ("source", "Source", "Source", FORM_FIELDS["source"]),
-                ("ac", "AC", "AC", FORM_FIELDS["ac"]),
-                ("tran", "TRAN", "TRAN", FORM_FIELDS["tran"]),
-            ]
+            groups = SIM_GROUPS
             return render_template(
                 "simulator.html",
                 mode=mode,
@@ -548,13 +616,11 @@ def create_app():
                 errors={"mode": "โหมดไม่ถูกต้อง"},
                 result=None,
                 run_status="idle",
-                circuit=current_app.config["CIRCUIT_DEFAULTS"].copy(),
+                circuit=schematic_values(current_app.config["CIRCUIT_DEFAULTS"], form_values),
                 show_bjt_model=current_app.config["SHOW_BJT_MODEL"],
                 show_run_time=current_app.config["SHOW_RUN_TIME"],
                 show_command=current_app.config["SHOW_COMMAND"],
             ), 400
-
-        form_values = dict(request.form)
 
         # Validate inputs
         errors = {}
@@ -574,16 +640,16 @@ def create_app():
                 values=request.form,
                 fields=FORM_FIELDS,
                 groups=[
-                    ("circuit", "Circuit", "Circuit", FORM_FIELDS["circuit"]),
-                    ("source", "Source", "Source", FORM_FIELDS["source"]),
-                    ("ac", "AC", "AC", FORM_FIELDS["ac"]),
-                    ("tran", "TRAN", "TRAN", FORM_FIELDS["tran"]),
+                    ("circuit", "Circuit", "ALL", FORM_FIELDS["circuit"]),
+                    ("source", "Source", "TRAN", FORM_FIELDS["source"]),
+                    ("ac", "AC sweep", "AC", FORM_FIELDS["ac"]),
+                    ("tran", "Transient", "TRAN", FORM_FIELDS["tran"]),
                 ],
                 notice="กรุณาป้อนตัวเลข",
                 errors=errors,
                 result=None,
                 run_status="idle",
-                circuit=current_app.config["CIRCUIT_DEFAULTS"].copy(),
+                circuit=schematic_values(current_app.config["CIRCUIT_DEFAULTS"], form_values),
                 show_bjt_model=current_app.config["SHOW_BJT_MODEL"],
                 show_run_time=current_app.config["SHOW_RUN_TIME"],
                 show_command=current_app.config["SHOW_COMMAND"],
@@ -599,16 +665,16 @@ def create_app():
                 values=request.form,
                 fields=FORM_FIELDS,
                 groups=[
-                    ("circuit", "Circuit", "Circuit", FORM_FIELDS["circuit"]),
-                    ("source", "Source", "Source", FORM_FIELDS["source"]),
-                    ("ac", "AC", "AC", FORM_FIELDS["ac"]),
-                    ("tran", "TRAN", "TRAN", FORM_FIELDS["tran"]),
+                    ("circuit", "Circuit", "ALL", FORM_FIELDS["circuit"]),
+                    ("source", "Source", "TRAN", FORM_FIELDS["source"]),
+                    ("ac", "AC sweep", "AC", FORM_FIELDS["ac"]),
+                    ("tran", "Transient", "TRAN", FORM_FIELDS["tran"]),
                 ],
                 notice="RE ต้องมากกว่า 0",
                 errors=errors,
                 result=None,
                 run_status="idle",
-                circuit=current_app.config["CIRCUIT_DEFAULTS"].copy(),
+                circuit=schematic_values(current_app.config["CIRCUIT_DEFAULTS"], form_values),
                 show_bjt_model=current_app.config["SHOW_BJT_MODEL"],
                 show_run_time=current_app.config["SHOW_RUN_TIME"],
                 show_command=current_app.config["SHOW_COMMAND"],
@@ -629,16 +695,16 @@ def create_app():
                 values=form_values,
                 fields=FORM_FIELDS,
                 groups=[
-                    ("circuit", "Circuit", "Circuit", FORM_FIELDS["circuit"]),
-                    ("source", "Source", "Source", FORM_FIELDS["source"]),
-                    ("ac", "AC", "AC", FORM_FIELDS["ac"]),
-                    ("tran", "TRAN", "TRAN", FORM_FIELDS["tran"]),
+                    ("circuit", "Circuit", "ALL", FORM_FIELDS["circuit"]),
+                    ("source", "Source", "TRAN", FORM_FIELDS["source"]),
+                    ("ac", "AC sweep", "AC", FORM_FIELDS["ac"]),
+                    ("tran", "Transient", "TRAN", FORM_FIELDS["tran"]),
                 ],
                 notice=e.message,
                 errors={e.field: e.message},
                 result=None,
                 run_status="idle",
-                circuit=current_app.config["CIRCUIT_DEFAULTS"].copy(),
+                circuit=schematic_values(current_app.config["CIRCUIT_DEFAULTS"], form_values),
                 show_bjt_model=current_app.config["SHOW_BJT_MODEL"],
                 show_run_time=current_app.config["SHOW_RUN_TIME"],
                 show_command=current_app.config["SHOW_COMMAND"],
@@ -652,16 +718,16 @@ def create_app():
                 values=form_values,
                 fields=FORM_FIELDS,
                 groups=[
-                    ("circuit", "Circuit", "Circuit", FORM_FIELDS["circuit"]),
-                    ("source", "Source", "Source", FORM_FIELDS["source"]),
-                    ("ac", "AC", "AC", FORM_FIELDS["ac"]),
-                    ("tran", "TRAN", "TRAN", FORM_FIELDS["tran"]),
+                    ("circuit", "Circuit", "ALL", FORM_FIELDS["circuit"]),
+                    ("source", "Source", "TRAN", FORM_FIELDS["source"]),
+                    ("ac", "AC sweep", "AC", FORM_FIELDS["ac"]),
+                    ("tran", "Transient", "TRAN", FORM_FIELDS["tran"]),
                 ],
                 notice=str(e),
                 errors={},
                 result=None,
                 run_status="idle",
-                circuit=current_app.config["CIRCUIT_DEFAULTS"].copy(),
+                circuit=schematic_values(current_app.config["CIRCUIT_DEFAULTS"], form_values),
                 show_bjt_model=current_app.config["SHOW_BJT_MODEL"],
                 show_run_time=current_app.config["SHOW_RUN_TIME"],
                 show_command=current_app.config["SHOW_COMMAND"],
@@ -675,17 +741,17 @@ def create_app():
                 values=form_values,
                 fields=FORM_FIELDS,
                 groups=[
-                    ("circuit", "Circuit", "Circuit", FORM_FIELDS["circuit"]),
-                    ("source", "Source", "Source", FORM_FIELDS["source"]),
-                    ("ac", "AC", "AC", FORM_FIELDS["ac"]),
-                    ("tran", "TRAN", "TRAN", FORM_FIELDS["tran"]),
+                    ("circuit", "Circuit", "ALL", FORM_FIELDS["circuit"]),
+                    ("source", "Source", "TRAN", FORM_FIELDS["source"]),
+                    ("ac", "AC sweep", "AC", FORM_FIELDS["ac"]),
+                    ("tran", "Transient", "TRAN", FORM_FIELDS["tran"]),
                 ],
                 notice=e.message,
                 error_log=e.log,
                 errors={},
                 result=None,
                 run_status="idle",
-                circuit=current_app.config["CIRCUIT_DEFAULTS"].copy(),
+                circuit=schematic_values(current_app.config["CIRCUIT_DEFAULTS"], form_values),
                 show_bjt_model=current_app.config["SHOW_BJT_MODEL"],
                 show_run_time=current_app.config["SHOW_RUN_TIME"],
                 show_command=current_app.config["SHOW_COMMAND"],
@@ -697,15 +763,12 @@ def create_app():
             run_status = "error"
 
         # Get circuit data for display
-        circuit = current_app.config["CIRCUIT_DEFAULTS"].copy()
+        circuit = schematic_values(
+            current_app.config["CIRCUIT_DEFAULTS"], form_values
+        )
 
         # Build groups for the template
-        groups = [
-            ("circuit", "Circuit", "Circuit", FORM_FIELDS["circuit"]),
-            ("source", "Source", "Source", FORM_FIELDS["source"]),
-            ("ac", "AC", "AC", FORM_FIELDS["ac"]),
-            ("tran", "TRAN", "TRAN", FORM_FIELDS["tran"]),
-        ]
+        groups = SIM_GROUPS
 
         return render_template(
             "simulator.html",
@@ -753,6 +816,12 @@ def create_app():
         return simulator()
 
     return app
+
+
+# Bind the factory so both `flask --app app run` and `python app.py` serve the
+# real routes. Without this the module-level Flask instance has no routes and
+# every request returns 404.
+app = create_app()
 
 
 if __name__ == "__main__":

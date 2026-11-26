@@ -30,7 +30,7 @@ def _fmt(value: float, unit: str = "") -> str:
 
 
 def _fmt_axis(value: float) -> str:
-    if value == 0:
+    if abs(value) < 1e-9:
         return "0"
     magnitude = abs(value)
     if magnitude >= 1e6:
@@ -56,7 +56,10 @@ def _downsample(points: list[tuple[float, float]], limit: int = 260):
 def _nice_ticks(low: float, high: float, count: int = 5) -> list[float]:
     if not math.isfinite(low) or not math.isfinite(high) or low == high:
         return [low]
-    return [low + (high - low) * i / (count - 1) for i in range(count)]
+    step = (high - low) / (count - 1)
+    ticks = [low + step * i for i in range(count)]
+    # A tick that lands within a sliver of zero is the zero line, not 2.2e-05.
+    return [0.0 if abs(value) < abs(step) * 0.02 else value for value in ticks]
 
 
 def line_chart(
@@ -156,8 +159,11 @@ def line_chart(
 
     if log_x:
         lo, hi = math.log10(x_low), math.log10(x_high)
-        ticks = _nice_ticks(lo, hi)
-        x_ticks = [10**tick for tick in ticks]
+        first, last = math.ceil(lo), math.floor(hi)
+        if last - first >= 2:
+            x_ticks = [10**decade for decade in range(first, last + 1)]
+        else:
+            x_ticks = [10**tick for tick in _nice_ticks(lo, hi)]
     else:
         x_ticks = _nice_ticks(x_low, x_high)
     for tick in x_ticks:

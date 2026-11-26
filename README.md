@@ -82,7 +82,9 @@ CE voltage-divider อ้างอิงวงจรเดียว (ไม่�
 ทุกตัวเลขบนหน้าเว็บอ่านจากไฟล์ `wrdata` ที่ ngspice เขียนใน working directory ของรอบนั้น:
 
 - `spice_engine.build_netlist()` สร้าง netlist, `subprocess.run([...])` เรียก ngspice แบบ `shell=False`, มี timeout และใช้ `TemporaryDirectory()` ต่อรอบ
-- model ที่ใช้: `QNPN NPN(IS=1e-14 BF=<BF from form> VAF=100)`
+- model ที่ใช้: `QNPN NPN(IS=1e-14 BF=150 VAF=100)` — BF คือ β ของโมเดล ngspice,
+  ตรึงค่า 150 ตาม baseline (ใบงานอนุญาตให้ปรับโมเดลได้ แต่ B1–B8 ไม่ได้กำหนดให้กรอกค่านี้)
+- ตาราง DC เทียบ ngspice กับ analytical (`dc_bias.py`, β = BF = 150, VBE = 0.7 V) แสดงผลต่างจากโมเดลจริง
 - phase ของ ngspice ถูกแปลง rad → degree; `fL`/`fH` หาจากจุดตัด −3 dB ของ sweep จริงเท่านั้น
   ถ้า sweep ไม่มีจุดตัดจะแสดง `not determined in sweep range` (ไม่สร้างตัวเลขขึ้นเอง)
 - ไม่พบ ngspice → HTTP 503; solver ล้มเหลว → HTTP 502 พร้อม log
@@ -106,5 +108,5 @@ $env:NGSPICE_BIN = "C:\Users\b6826727\AppData\Local\Programs\ngspice\Spice64\bin
 - ไม่ commit ไฟล์รันชั่วคราว (`.venv/`, `.env`, `*.log`, `circuit.cir`, `wrdata`, `.opencode/` ถูก ignore)
 
 ```powershell
-.venv\Scripts\python -m pytest -q   # 90 passed, 1 skipped
+.venv\Scripts\python -m pytest -q   # 91 passed, 1 skipped
 ```

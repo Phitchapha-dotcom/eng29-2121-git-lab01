@@ -39,6 +39,7 @@ FORM_FIELDS = {
         ("rl", "RL (Ω)", ""),
         ("cin_uf", "Cin (μF)", ""),
         ("cout_uf", "Cout (μF)", ""),
+        ("ppd", "PPD", ""),
     ),
     "source": (
         ("amp_mv", "Amplitude (mV peak)", "mV"),

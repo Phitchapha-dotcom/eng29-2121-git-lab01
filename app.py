@@ -236,7 +236,7 @@ def _calculate_lab3(mode, raw):
 
 
 # ngspice binary path - adjust as needed
-NGSPICE_BIN = r"C:\Users\b6826727\AppData\Local\Programs\ngspice\Spice64\bin\ngspice_con.exe"
+NGSPICE_BIN = r"C:\Users\phich\Tools\ngspice\Spice64\bin\ngspice_con.exe"
 
 
 class SpiceUnavailable(Exception):

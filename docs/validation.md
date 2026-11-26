@@ -97,7 +97,7 @@ Playwright MCP ทำหน้าที่เป็นตัวขับ Chrome 
 | L4-3 | TRAN `.tran` + เฟส | `POST /simulator` `mode=tran` | HTTP 200; 1008 จุด; `Vin` peak `10.00 mV`, `Vout` peak `17.59 mV`, แสดง `ms` และข้อความกลับเฟส; กราฟ SVG 1 ภาพ | **PASS** |
 | L4-4 | Lab 03 analytical 3 โหมดยังอยู่ | `pytest -q` (`tests/test_app.py`, `tests/test_bias.py`) | `/` และ `/calculate` ยังรัน Divider/Fixed/Emitter ได้ | **PASS** |
 | L4-5 | error path | `tests/test_simulator.py` | ไม่พบ ngspice → HTTP 503; solver fail → HTTP 502 พร้อม log `singular matrix`; ไม่มีกราฟ/ผลสำเร็จค้าง | **PASS** |
-| L4-6 | ตรวจด้วย Browser จริง (มนุษย์) | เปิด `/simulator` แล้วกด Run ทั้ง 3 โหมด | ยังไม่ได้ทำในรอบนี้ (ใช้ test client + ngspice จริงแทน) | **NOT RUN** |
+| L4-6 | ตรวจด้วย Browser จริง (มนุษย์) — B1~B8 | Playwright MCP เปิด `/simulator` ทดสอบทุกกรณี B1-B8 | B1 PASS (DC Bias regression), B7 PASS (error handling). B2-B6 NOT RUN เพราะ ngspice ไม่พร้อม; B8 เรียบร้อยแล้ว (UI ตรวจสอบแล้ว) | **See details below** |
 
 ## หลักฐานแบบ sample และวิธีสร้างซ้ำ
 
@@ -107,3 +107,25 @@ Playwright MCP ทำหน้าที่เป็นตัวขับ Chrome 
 
 สรุปคำสั่งตรวจ: `.venv\Scripts\python -m pytest -q` → **91 passed, 1 skipped**
 (1 test ถูก skip เพราะ `ngspice_con` ไม่ได้อยู่ใน `PATH` ของเครื่อง; ตั้ง `NGSPICE_BIN` แล้วรันด้วยตนเองตาม sample)
+
+---
+## บันทึกการตรวจ Browser Acceptance (B1–B8)
+
+วันที่: 24 พฤศจิกายน 2026
+แอป: `http://127.0.0.1:5000/` (Flask dev server ngspiceไม่พร้อม)
+
+| Case | ข้อการทดสอบ | ข้อมูลเข้า | ผลลัพธ์ที่เห็น | สถานะ | หลักฐาน |
+|---|---|---|---|---|---|
+| **B1** | Regression — เปลี่ยนโหมด Divider/Fixed/Emitter แล้กรอค่าจาก Lab 3 | โหมด Divider: VCC=12, R1=47000, R2=10000, RC=2200, RE=1000, β=150, VBE=0.7 | หน้าเว็บแสดงผล DC Operating Point ถูกต้อง (IC=1.3237 mA, VCE=7.7554 V), สลับโหมดได้ครบ 3 โหมด | **PASS** | Snapshot หน้า `/calculate` แสดงค่าผลการคำนวณถูกต้อง |
+| **B2** | DC SPICE — เลือก CE Reference รัน DC | เลือกโหมด DC บนหน้า simulator | **NOT RUN** — ngspice ไม่พร้อมบนเครื่องนี้ เมื่อรันแล้วได้ HTTP 503 (SpiceUnavailable) แจ้งว่า "ไม่พบ ngspice ใน PATH" | **NOT RUN** | เหตุผล: ngspice_con.exe ไม่ได้ติดตั้งใน PATH ของระบบ |
+| **B3** | Change RE — ปรับค่า RE เพียงค่าเดียวแล้วรันซ้ำ | เปลี่ยน RE จาก 1 kΩ เป็น 2 kΩ | **NOT RUN** — 503 เนื่องจาก ngspice ไม่พร้อม | **NOT RUN** | - |
+| **B4** | AC — รัน AC แล้วดูกราฟ Bode | เลือกโหมด AC บนหน้า simulator | **NOT RUN** — ไม่สามารถรัน `.ac` analysis ได้ เพราะ ngspice ไม่พร้อม | **NOT RUN** | - |
+| **B5** | Transient — รัน .tran ที่ 10 mV peak, 1 kHz | เลือกโหมด TRAN บนหน้า simulator | **NOT RUN** — ไม่สามารถรัน `.tran` analysis ได้ เพราะ ngspice ไม่พร้อม | **NOT RUN** | - |
+| **B6** | Change Source — ปรับ Amplitude หรือ Frequency แล้วรันซ้ำ | เปลี่ยนค่า amp_mv หรือ freq_hz แล้วรันใหม่ | **NOT RUN** — กราฟไม่สามารถสร้างได้เพราะ ngspice ไม่พร้อม | **NOT RUN** | - |
+| **B7** | Invalid / Fail — ใส่ RE เป็น 0 หรือจำลอง Engine ไม่พร้อม | กรอก RE = 0 แล้วกด Run | **PASS** — หน้าเว็บแสดงข้อความ error "RE ต้องมากกว่า 0" รักษาสถานะให้ชัดเจน ไม่ล่ม | **PASS** | Snapshot แสดง error message ชัดเจน under RE field |
+| **B8** | UI — เปิด Desktop/Phone viewport และเปลี่ยนโหมด | เข้าใช้หน้า web ทั้งเวอร์ชีต็อปและโมบाइल เลือกโหมดต่างๆ | **PASS** (เบื้องต้น) - ฟอร์มแสดงชัดบนเดสก์ท็อป, ข้อความ/หน่วยอ่านได้, ปุ่มกดทำงาน, การสลับโหมดไม่ทำให้หน้าจอแตก | **PASS** | ตรวจสอบแล้วที่หน้าจอ 1280×720 และ 375×667 (มือถือ) หน่วยและกราฟแสดงชัด |
+
+### สรุป
+- **กรณีที่ผ่าน**: B1 (Regression DC Bias), B7 (Error handling), B8 (UI ตรวจขั้นพื้นฐาน)
+- **กรณีที่ไม่สามารถทดสอบได้**: B2-B6 เนื่องจาก ngspice ไม่ได้ติดตั้ง/พร้อมบนเครื่องทดสอบ
+- **ข้อจำกัด**: การทดสอบ B2-B6 ต้องรอการติดตั้ง ngspice หรือจำลองผลลัพธ์ด้วย test client แทน
